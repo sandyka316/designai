@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+@layer base, components, utilities;
+@import "tailwindcss" layer(utilities);
+
+/* ─── DESIGN TOKENS ─────────────────────────────────────────── */
+:root {
+  --bg-primary:        #0a0a0f;
+  --bg-secondary:      #111118;
+  --bg-card:           #16161f;
+  --border:            #1e1e2e;
+  --border-subtle:     #252535;
+
+  --accent:            #7c6dfa;
+  --accent-dim:        rgba(124, 109, 250, 0.12);
+  --accent-glow:       rgba(124, 109, 250, 0.18);
+  --accent-secondary:  #4facfe;
+
+  --text-primary:      #f0f0f8;
+  --text-muted:        #6b6b8a;
+  --text-dim:          #3a3a5c;
+
+  --space-xs:   0.5rem;
+  --space-sm:   0.75rem;
+  --space-md:   1rem;
+  --space-lg:   1.5rem;
+  --space-xl:   2rem;
+  --space-2xl:  3rem;
+  --space-3xl:  5rem;
+  --space-4xl:  7rem;
+}
+
+/* ─── RESET — di dalam @layer base agar tidak override utilities ── */
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
+/* ─── BACKGROUND DECORATIONS ─────────────────────────────────── */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(124, 109, 250, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 109, 250, 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+.spotlight {
+  background: radial-gradient(
+    ellipse 80% 55% at 50% -5%,
+    rgba(124, 109, 250, 0.14) 0%,
+    transparent 70%
+  );
+}
+
+.grain::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.35;
+}
+
+/* ─── TEXT EFFECTS ───────────────────────────────────────────── */
+.glow-text {
+  text-shadow: 0 0 48px rgba(124, 109, 250, 0.55);
+}
+
+/* ─── COMPONENT: PROMPT INPUT ────────────────────────────────── */
+.prompt-input {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: all 0.35s ease;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.prompt-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 5px rgba(124, 109, 250, 0.18), 
+              0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+/* ─── COMPONENT: FEATURE CARD ────────────────────────────────── */
+.feature-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: border-color 0.25s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  border-color: rgba(124, 109, 250, 0.4);
+  transform: translateY(-5px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+
+/* ─── COMPONENT: STEP CARD ───────────────────────────────────── */
+.step-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  transition: border-color 0.25s ease;
+}
+
+.step-card:hover {
+  border-color: rgba(124, 109, 250, 0.3);
+}
+
+/* ─── COMPONENT: SHIMMER BUTTON ──────────────────────────────── */
+.btn-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    #9b8dfc 45%,
+    var(--accent-secondary) 75%,
+    var(--accent) 100%
+  );
+  background-size: 220% auto;
+  transition: background-position 0.5s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-shimmer:hover {
+  background-position: right center;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(124, 109, 250, 0.38);
+}
+
+.btn-shimmer:active {
+  transform: translateY(0);
+}
+
+/* ─── COMPONENT: TAG PILL ────────────────────────────────────── */
+.tag-pill {
+  background: rgba(124, 109, 250, 0.09);
+  border: 1px solid rgba(124, 109, 250, 0.22);
+  color: #a89ef5;
+}
+
+/* ─── COMPONENT: OUTLINE BUTTON ──────────────────────────────── */
+.btn-outline {
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.btn-outline:hover {
+  border-color: rgba(124, 109, 250, 0.4);
+  color: var(--text-primary);
+  background: rgba(124, 109, 250, 0.06);
+}
+
+/* ─── ANIMATIONS ─────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-14px); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes scroll-indicator {
+  0%, 100% { opacity: 0.4; transform: scaleY(1); }
+  50%       { opacity: 1;   transform: scaleY(0.6); }
+}
+
+/* ─── ANIMATION UTILITIES — harus di @layer utilities ─────────── */
+@layer utilities {
+  .animate-slide-up {
+    animation: slide-up 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 1s ease forwards;
+    opacity: 0;
+  }
+
+  .delay-100 { animation-delay: 0.10s; }
+  .delay-200 { animation-delay: 0.20s; }
+  .delay-300 { animation-delay: 0.30s; }
+  .delay-400 { animation-delay: 0.42s; }
+  .delay-500 { animation-delay: 0.54s; }
+  .delay-600 { animation-delay: 0.66s; }
+  .delay-700 { animation-delay: 0.78s; }
+
+  .cursor-blink {
+    animation: blink 1.1s step-end infinite;
+  }
+}
+
+/* ─── COMPONENT: PROMPT INPUT TEXTAREA ────────────────────────── */
+.prompt-input textarea {
+  font-family: 'Syne', sans-serif;
+  line-height: 1.5;
+  resize: none;
+  overflow: hidden;
+  min-height: 60px;
+  max-height: 200px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--bg-card);
+}
+
+/* Scrollbar untuk Webkit browsers */
+.prompt-input textarea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.prompt-input textarea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.prompt-input textarea::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* ─── DIVIDER ─────────────────────────────────────────────────── */
+.divider-glow {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(124, 109, 250, 0.35) 30%,
+    rgba(124, 109, 250, 0.35) 70%,
+    transparent
+  );
+}
