@@ -103,92 +103,73 @@ export default function Navbar({
       {/* Main bar */}
       <div className="relative max-w-7xl mx-auto px-6 md:px-8 h-16 flex items-center justify-between">
         {/* Logo — klik buka dropdown */}
-        {/* Logo — klik buka dropdown */}
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-2.5 group cursor-pointer"
-          >
-            <div className="w-7 h-7 rounded-lg bg-[var(--accent)] flex items-center justify-center shadow-lg shadow-[var(--accent)]/25 group-hover:shadow-[var(--accent)]/45 transition-shadow duration-200">
-              <Sparkles size={14} className="text-white" strokeWidth={2.5} />
-            </div>
-            <span className="text-base font-bold tracking-tight text-[var(--text-primary)]">
-              Design<span className="text-[var(--accent)]">AI</span>
-            </span>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              className={`text-[var(--text-muted)] transition-transform duration-200 ${menuOpen ? "rotate-180" : ""}`}
-            >
-              <path
-                d="M2 4l4 4 4-4"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-
-          {/* Dropdown menu */}
-          {menuOpen && (
-            <div
-              className="absolute top-full left-0 mt-3 w-60 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl overflow-hidden z-50"
-              style={{
-                boxShadow:
-                  "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,109,250,0.08)",
-              }}
-            >
-              {/* Menu header */}
-              <div className="px-4 py-3 border-b border-[var(--border)]">
-                <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase">
-                  Navigate
-                </span>
-              </div>
-              {NAV_MENU.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--accent)]/8 transition-colors duration-150 group"
-                >
-                  <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/15 flex items-center justify-center shrink-0 group-hover:bg-[var(--accent)]/20 transition-colors">
-                    <item.icon size={14} className="text-[var(--accent)]" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-[var(--text-primary)]">
-                      {item.label}
-                    </span>
-                    <span className="text-xs text-[var(--text-muted)]">
-                      {item.desc}
-                    </span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-[var(--accent)] flex items-center justify-center shadow-lg shadow-[var(--accent)]/25">
+            <Sparkles size={14} className="text-white" strokeWidth={2.5} />
+          </div>
+          <span className="text-base font-bold tracking-tight text-[var(--text-primary)]">
+            Design<span className="text-[var(--accent)]">AI</span>
+          </span>
         </div>
 
         {/* Right CTA */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Right CTA + Hamburger */}
+        <div className="flex items-center gap-3">
           <button className="text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors duration-200 font-medium">
             Sign in
           </button>
           <button className="btn-shimmer text-sm font-semibold text-white px-4 py-2 rounded-lg">
             Get Started
           </button>
-        </div>
 
-        {/* Mobile hamburger */}
-        <button
-          className="md:hidden text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors duration-200 p-1"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+          <div className="relative" ref={menuRef}>
+            <button
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors duration-200 p-1 cursor-pointer"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+
+            {/* Dropdown menu */}
+            {menuOpen && (
+              <div
+                className="absolute top-full right-0 mt-3 w-60 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] shadow-2xl overflow-hidden z-50"
+                style={{
+                  boxShadow:
+                    "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,109,250,0.08)",
+                }}
+              >
+                {/* Menu header */}
+                <div className="px-4 py-3 border-b border-[var(--border)]">
+                  <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase">
+                    Navigate
+                  </span>
+                </div>
+                {NAV_MENU.map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--accent)]/8 transition-colors duration-150 group"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/15 flex items-center justify-center shrink-0 group-hover:bg-[var(--accent)]/20 transition-colors">
+                      <item.icon size={14} className="text-[var(--accent)]" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-[var(--text-primary)]">
+                        {item.label}
+                      </span>
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {item.desc}
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Mobile menu */}
