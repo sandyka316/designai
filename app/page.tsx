@@ -88,6 +88,12 @@ export default function Home() {
   const uploadMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  const handleGenerate = () => {
+    if (!prompt.trim()) return;
+    // Encode prompt lalu redirect ke /generate dengan query ?q=
+    router.push(`/generate?q=${encodeURIComponent(prompt.trim())}`);
+  };
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -332,22 +338,25 @@ export default function Home() {
                 </div>
 
                 {/* Textarea */}
-                <div className="flex-1 pt-2">
+                <div className="flex-1 flex items-center py-2">
                   <textarea
                     ref={textareaRef}
                     value={prompt}
                     onChange={handleChange}
-                    placeholder="Describe the design you want to generate..."
-                    className="w-full bg-transparent text-2xl font-medium placeholder:text-[var(--text-dim)] outline-none py-4 resize-none overflow-hidden"
-                    style={{ caretColor: "var(--accent)" }}
+                    placeholder="Describe what you'd like to generate..."
                     rows={1}
+                    className="w-full bg-transparent outline-none border-none resize-none text-xl text-[var(--text-primary)] placeholder:text-[var(--text-dim)] leading-relaxed py-5"
+                    style={{ caretColor: "var(--accent)" }}
                   />
                 </div>
 
                 {/* Generate button */}
-                <button className="btn-shimmer flex items-center gap-4 px-8 py-4 rounded-2xl text-sm font-bold text-white whitespace-nowrap shrink-0">
-                  Generate
-                  <ArrowRight size={22} />
+                <button
+                  onClick={handleGenerate}
+                  disabled={!prompt.trim()}
+                  className="btn-shimmer flex items-center justify-center gap-3 py-4 px-6 rounded-2xl text-sm font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shrink-0"
+                >
+                  Generate <ArrowRight size={16} />
                 </button>
               </div>
             </div>
