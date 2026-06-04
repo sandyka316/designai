@@ -126,14 +126,14 @@ export default function RecommendationsPage() {
             <div className="w-11 h-11 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/25 flex items-center justify-center shrink-0">
               <Wand2 size={20} className="text-[var(--accent)]" />
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
+            <h1 className="text-xl md:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
               AI Recommendations
             </h1>
           </div>
-          <div className="hidden md:block w-px h-10 bg-[var(--border)] ml-12" />
+          <div className="hidden md:block w-px h-12 bg-[var(--border)] -ml-2" />
           <p className="text-[var(--text-muted)] text-sm md:text-base leading-relaxed max-w-sm">
-            Upload a reference image and let AI analyze the style, colors, and
-            mood to generate product recommendations.
+            Upload a reference image and let AI analyze its style, colors, and
+            mood.
           </p>
         </div>
       </div>

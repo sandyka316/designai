@@ -10,6 +10,12 @@ import {
   FileText,
   Paperclip,
   ImageIcon,
+  Lightbulb,
+  Zap,
+  Crown,
+  Star,
+  CheckCircle2,
+  ChevronDown,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useSearchParams } from "next/navigation";
@@ -19,6 +25,108 @@ const MODELS = [
   { id: "hd", label: "HD", locked: false },
   { id: "genius", label: "Genius", locked: true },
   { id: "super-genius", label: "Super Genius", locked: true },
+];
+
+// ─── DATA PENJELASAN ──────────────────────────────────────────────
+const TIPS = [
+  {
+    icon: "1",
+    title: "Deskripsikan dengan detail",
+    desc: "Semakin spesifik prompt Anda, semakin akurat hasilnya. Sebutkan gaya, warna, material, dan suasana yang diinginkan.",
+    example:
+      '"Minimalist white sneakers, premium matte leather, clean background, soft studio lighting, 8K"',
+  },
+  {
+    icon: "2",
+    title: "Tambahkan konteks produk",
+    desc: "Sebutkan target audiens, kategori produk, atau penggunaan akhir agar AI menghasilkan visual yang tepat sasaran.",
+    example:
+      '"Luxury perfume bottle for young women, gold and black, elegant, product photography"',
+  },
+  {
+    icon: "3",
+    title: "Gunakan kata kunci kualitas",
+    desc: "Tambahkan kata seperti 4K, highly detailed, professional photography, sharp focus untuk meningkatkan kualitas output.",
+    example:
+      '"Street fashion hoodie, urban aesthetic, 4K, highly detailed, commercial shoot"',
+  },
+  {
+    icon: "4",
+    title: "Upload referensi gambar",
+    desc: "Klik ikon Wand di prompt input untuk upload gambar referensi. AI akan mengikuti gaya dan mood dari gambar tersebut.",
+    example: "Tekan ikon wand → pilih foto referensi → tulis prompt tambahan",
+  },
+];
+
+const MODEL_INFO = [
+  {
+    id: "hd",
+    label: "HD",
+    icon: Zap,
+    status: "free",
+    speed: "~2–3 detik",
+    quality: "Tinggi",
+    desc: "Model standar dengan kualitas tinggi. Cocok untuk eksplorasi ide cepat, mockup awal, dan kebutuhan sehari-hari.",
+    features: [
+      "Generasi cepat",
+      "Kualitas komersial",
+      "Gratis untuk semua user",
+    ],
+    color: "var(--accent)",
+  },
+  {
+    id: "genius",
+    label: "Genius",
+    icon: Crown,
+    status: "pro",
+    speed: "~5–8 detik",
+    quality: "Sangat Tinggi",
+    desc: "Model lanjutan dengan pemahaman konteks yang lebih dalam. Menghasilkan visual yang lebih detail dan fotorealistis.",
+    features: [
+      "Detail ultra-tinggi",
+      "Pemahaman konteks lebih baik",
+      "Khusus Pro & Enterprise",
+    ],
+    color: "#f59e0b",
+  },
+  {
+    id: "super-genius",
+    label: "Super Genius",
+    icon: Star,
+    status: "enterprise",
+    speed: "~10–15 detik",
+    quality: "Ultra",
+    desc: "Model flagship kami. Untuk kebutuhan produksi professional — katalog produk, campaign iklan, dan publikasi premium.",
+    features: [
+      "Kualitas production-grade",
+      "Multi-angle generation",
+      "Khusus Enterprise",
+    ],
+    color: "#ec4899",
+  },
+];
+
+const BENEFITS = [
+  {
+    icon: Zap,
+    title: "Hemat waktu & biaya",
+    desc: "Tidak perlu sewa fotografer atau studio. Hasilkan ratusan visual produk dalam hitungan menit.",
+  },
+  {
+    icon: ImageIcon,
+    title: "Siap pakai komersial",
+    desc: "Output beresolusi tinggi langsung siap untuk e-commerce, katalog, media sosial, dan materi iklan.",
+  },
+  {
+    icon: Sparkles,
+    title: "Konsisten di semua produk",
+    desc: "Pertahankan gaya visual yang konsisten di seluruh lini produk hanya dengan template prompt yang sama.",
+  },
+  {
+    icon: Wand2,
+    title: "Multi-modal input",
+    desc: "Gabungkan teks dan gambar referensi sekaligus untuk kontrol penuh atas hasil yang diinginkan.",
+  },
 ];
 
 interface UploadedFile {
@@ -33,6 +141,7 @@ function ImageGeneratorPage() {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [openTip, setOpenTip] = useState<number | null>(null);
   const searchParams = useSearchParams();
 
   const [prompt, setPrompt] = useState(searchParams.get("q") ?? "");
@@ -41,7 +150,6 @@ function ImageGeneratorPage() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const uploadMenuRef = useRef<HTMLDivElement>(null);
 
-  // Tutup menu saat klik di luar
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -109,7 +217,7 @@ function ImageGeneratorPage() {
               AI Image Generator
             </h1>
           </div>
-          <div className="hidden md:block w-px h-10 bg-[var(--border)] ml-12" />
+          <div className="hidden md:block w-px h-12 bg-[var(--border)] ml-12" />
           <p className="text-[var(--text-muted)] text-sm md:text-base leading-relaxed max-w-sm">
             This is an AI Image Generator. It creates an image from scratch from
             a text description.
@@ -118,7 +226,7 @@ function ImageGeneratorPage() {
       </div>
 
       {/* ─── MAIN CONTENT ─────────────────────────────────────── */}
-      <div className="px-6 md:px-12 pb-20 max-w-7xl mx-auto">
+      <div className="px-6 md:px-12 pb-10 max-w-7xl mx-auto">
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden">
           <div className="grid grid-cols-1 md:grid-cols-2">
             {/* ── LEFT PANEL: Controls ── */}
@@ -325,11 +433,9 @@ function ImageGeneratorPage() {
 
             {/* ── RIGHT PANEL: Preview ── */}
             <div className="relative flex items-center justify-center p-8 md:p-10 min-h-[400px] md:min-h-0">
-              {/* Background subtle grid */}
               <div className="absolute inset-0 grid-bg opacity-60 rounded-r-3xl" />
 
               {isGenerating ? (
-                /* Loading state */
                 <div className="relative z-10 flex flex-col items-center gap-5">
                   <div className="w-16 h-16 rounded-2xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center">
                     <Sparkles
@@ -345,7 +451,6 @@ function ImageGeneratorPage() {
                       This may take a few seconds
                     </p>
                   </div>
-                  {/* Loading bar */}
                   <div className="w-48 h-1 rounded-full bg-[var(--border)] overflow-hidden">
                     <div
                       className="h-full rounded-full bg-[var(--accent)]"
@@ -359,7 +464,6 @@ function ImageGeneratorPage() {
                   </div>
                 </div>
               ) : generatedImage ? (
-                /* Generated image */
                 <div className="relative z-10 w-full max-w-sm">
                   <img
                     src={generatedImage}
@@ -368,9 +472,7 @@ function ImageGeneratorPage() {
                   />
                 </div>
               ) : (
-                /* Empty state */
                 <div className="relative z-10 flex flex-col items-center gap-4 text-center">
-                  {/* Sparkles icon decorative */}
                   <div className="relative">
                     <div className="w-20 h-20 rounded-3xl bg-[var(--accent)]/8 border border-[var(--accent)]/15 flex items-center justify-center">
                       <Sparkles
@@ -378,7 +480,6 @@ function ImageGeneratorPage() {
                         className="text-[var(--accent)] opacity-60"
                       />
                     </div>
-                    {/* Glow */}
                     <div className="absolute inset-0 rounded-3xl bg-[var(--accent)]/5 blur-xl pointer-events-none" />
                   </div>
                   <div>
@@ -392,6 +493,194 @@ function ImageGeneratorPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════
+          ─── SECTION PENJELASAN ────────────────────────────────────
+      ═══════════════════════════════════════════════════════════ */}
+      <div className="px-6 md:px-12 pb-20 max-w-7xl mx-auto space-y-8 mt-6">
+        {/* ── 1. KEUNGGULAN FITUR ── */}
+        <div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center">
+              <Zap size={15} className="text-[var(--accent)]" />
+            </div>
+            <h2 className="text-xl font-extrabold text-[var(--text-primary)] tracking-tight">
+              Kenapa pakai AI Image Generator?
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {BENEFITS.map((b, i) => (
+              <div key={i} className="feature-card rounded-2xl p-5">
+                <div className="w-9 h-9 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center mb-4">
+                  <b.icon size={16} className="text-[var(--accent)]" />
+                </div>
+                <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2">
+                  {b.title}
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                  {b.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── 2. PENJELASAN MODEL ── */}
+        <div className="mt-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center">
+              <Crown size={15} className="text-[var(--accent)]" />
+            </div>
+            <h2 className="text-xl font-extrabold text-[var(--text-primary)] tracking-tight">
+              Pilih model yang tepat
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {MODEL_INFO.map((m) => (
+              <div
+                key={m.id}
+                className={`feature-card rounded-2xl p-6 ${
+                  selectedModel === m.id && !m.status !== ("free" as any)
+                    ? "border-[var(--accent)]/40"
+                    : ""
+                }`}
+              >
+                {/* Header model */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center"
+                      style={{
+                        background: `${m.color}18`,
+                        border: `1px solid ${m.color}30`,
+                      }}
+                    >
+                      <m.icon size={16} style={{ color: m.color }} />
+                    </div>
+                    <span className="text-sm font-extrabold text-[var(--text-primary)]">
+                      {m.label}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                      m.status === "free"
+                        ? "bg-green-500/10 text-green-400 border border-green-500/20"
+                        : m.status === "pro"
+                          ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                          : "bg-pink-500/10 text-pink-400 border border-pink-500/20"
+                    }`}
+                  >
+                    {m.status === "free"
+                      ? "FREE"
+                      : m.status === "pro"
+                        ? "PRO"
+                        : "ENTERPRISE"}
+                  </span>
+                </div>
+
+                {/* Desc */}
+                <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-4">
+                  {m.desc}
+                </p>
+
+                {/* Meta */}
+                <div className="flex items-center gap-4 mb-4">
+                  <div>
+                    <p className="text-[10px] text-[var(--text-dim)] font-medium mb-0.5">
+                      Kecepatan
+                    </p>
+                    <p className="text-xs font-bold text-[var(--text-primary)]">
+                      {m.speed}
+                    </p>
+                  </div>
+                  <div className="w-px h-6 bg-[var(--border)]" />
+                  <div>
+                    <p className="text-[10px] text-[var(--text-dim)] font-medium mb-0.5">
+                      Kualitas
+                    </p>
+                    <p className="text-xs font-bold text-[var(--text-primary)]">
+                      {m.quality}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Features list */}
+                <div className="flex flex-col gap-1.5">
+                  {m.features.map((f, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <CheckCircle2
+                        size={11}
+                        style={{ color: m.color }}
+                        className="shrink-0"
+                      />
+                      <span className="text-[11px] text-[var(--text-muted)]">
+                        {f}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── 3. TIPS CARA PAKAI ── */}
+        <div className="mt-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center">
+              <Lightbulb size={15} className="text-[var(--accent)]" />
+            </div>
+            <h2 className="text-xl font-extrabold text-[var(--text-primary)] tracking-tight">
+              Tips menulis prompt yang bagus
+            </h2>
+          </div>
+          <div className="flex flex-col gap-3">
+            {TIPS.map((tip, i) => (
+              <div key={i} className="feature-card rounded-2xl overflow-hidden">
+                {/* Accordion header */}
+                <button
+                  onClick={() => setOpenTip(openTip === i ? null : i)}
+                  className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-7 h-7 rounded-lg bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-extrabold text-[var(--accent)]">
+                        {tip.icon}
+                      </span>
+                    </div>
+                    <span className="text-sm font-bold text-[var(--text-primary)]">
+                      {tip.title}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={16}
+                    className={`text-[var(--text-muted)] transition-transform duration-200 shrink-0 ${
+                      openTip === i ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {/* Accordion body */}
+                {openTip === i && (
+                  <div className="px-6 pb-5 border-t border-[var(--border)]">
+                    <p className="text-sm text-[var(--text-muted)] leading-relaxed mt-4 mb-3">
+                      {tip.desc}
+                    </p>
+                    <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-[var(--accent)]/5 border border-[var(--accent)]/15">
+                      <span className="text-[10px] font-bold text-[var(--accent)] uppercase tracking-widest shrink-0 mt-0.5">
+                        Contoh
+                      </span>
+                      <p className="text-xs text-[var(--text-muted)] leading-relaxed italic">
+                        {tip.example}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -3,36 +3,57 @@
 @layer base, components, utilities;
 @import "tailwindcss" layer(utilities);
 
-/* ─── DESIGN TOKENS ─────────────────────────────────────────── */
+/* ─── DESIGN TOKENS — DARK MODE (default) ───────────────────── */
 :root {
-  --bg-primary:        #0a0a0f;
-  --bg-secondary:      #111118;
-  --bg-card:           #16161f;
-  --border:            #1e1e2e;
-  --border-subtle:     #252535;
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #111118;
+  --bg-card: #16161f;
+  --border: #1e1e2e;
+  --border-subtle: #252535;
 
-  --accent:            #7c6dfa;
-  --accent-dim:        rgba(124, 109, 250, 0.12);
-  --accent-glow:       rgba(124, 109, 250, 0.18);
-  --accent-secondary:  #4facfe;
+  --accent: #7c6dfa;
+  --accent-dim: rgba(124, 109, 250, 0.12);
+  --accent-glow: rgba(124, 109, 250, 0.18);
+  --accent-secondary: #4facfe;
 
-  --text-primary:      #f0f0f8;
-  --text-muted:        #6b6b8a;
-  --text-dim:          #3a3a5c;
+  --text-primary: #f0f0f8;
+  --text-muted: #6b6b8a;
+  --text-dim: #3a3a5c;
 
-  --space-xs:   0.5rem;
-  --space-sm:   0.75rem;
-  --space-md:   1rem;
-  --space-lg:   1.5rem;
-  --space-xl:   2rem;
-  --space-2xl:  3rem;
-  --space-3xl:  5rem;
-  --space-4xl:  7rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 5rem;
+  --space-4xl: 7rem;
 }
 
-/* ─── RESET — di dalam @layer base agar tidak override utilities ── */
+/* ─── DESIGN TOKENS — LIGHT MODE ────────────────────────────── */
+.light {
+  --bg-primary: #f4f4fb;
+  --bg-secondary: #eaeaf5;
+  --bg-card: #ffffff;
+  --border: #dcdcee;
+  --border-subtle: #e8e8f5;
+
+  --accent: #6355e8;
+  --accent-dim: rgba(99, 85, 232, 0.10);
+  --accent-glow: rgba(99, 85, 232, 0.16);
+  --accent-secondary: #3a9de0;
+
+  --text-primary: #12121f;
+  --text-muted: #7272a0;
+  --text-dim: #b0b0cc;
+}
+
+/* ─── RESET ──────────────────────────────────────────────────── */
 @layer base {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -49,13 +70,23 @@
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
 /* ─── SCROLLBAR ──────────────────────────────────────────────── */
-::-webkit-scrollbar       { width: 4px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
-::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 2px;
+}
 
 /* ─── BACKGROUND DECORATIONS ─────────────────────────────────── */
 .grid-bg {
@@ -65,12 +96,22 @@
   background-size: 72px 72px;
 }
 
+.light .grid-bg {
+  background-image:
+    linear-gradient(rgba(99, 85, 232, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 85, 232, 0.06) 1px, transparent 1px);
+}
+
 .spotlight {
-  background: radial-gradient(
-    ellipse 80% 55% at 50% -5%,
-    rgba(124, 109, 250, 0.14) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(ellipse 80% 55% at 50% -5%,
+      rgba(124, 109, 250, 0.14) 0%,
+      transparent 70%);
+}
+
+.light .spotlight {
+  background: radial-gradient(ellipse 80% 55% at 50% -5%,
+      rgba(99, 85, 232, 0.08) 0%,
+      transparent 70%);
 }
 
 .grain::before {
@@ -83,9 +124,17 @@
   opacity: 0.35;
 }
 
+.light .grain::before {
+  opacity: 0.15;
+}
+
 /* ─── TEXT EFFECTS ───────────────────────────────────────────── */
 .glow-text {
   text-shadow: 0 0 48px rgba(124, 109, 250, 0.55);
+}
+
+.light .glow-text {
+  text-shadow: 0 0 48px rgba(99, 85, 232, 0.25);
 }
 
 /* ─── COMPONENT: PROMPT INPUT ────────────────────────────────── */
@@ -96,10 +145,19 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
+.light .prompt-input {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
 .prompt-input:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 5px rgba(124, 109, 250, 0.18), 
-              0 30px 70px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 5px rgba(124, 109, 250, 0.18),
+    0 30px 70px rgba(0, 0, 0, 0.6);
+}
+
+.light .prompt-input:focus-within {
+  box-shadow: 0 0 0 5px rgba(99, 85, 232, 0.12),
+    0 30px 70px rgba(0, 0, 0, 0.08);
 }
 
 /* ─── COMPONENT: FEATURE CARD ────────────────────────────────── */
@@ -115,6 +173,11 @@
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
 }
 
+.light .feature-card:hover {
+  border-color: rgba(99, 85, 232, 0.35);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.10);
+}
+
 /* ─── COMPONENT: STEP CARD ───────────────────────────────────── */
 .step-card {
   background: var(--bg-card);
@@ -126,15 +189,17 @@
   border-color: rgba(124, 109, 250, 0.3);
 }
 
+.light .step-card:hover {
+  border-color: rgba(99, 85, 232, 0.3);
+}
+
 /* ─── COMPONENT: SHIMMER BUTTON ──────────────────────────────── */
 .btn-shimmer {
-  background: linear-gradient(
-    90deg,
-    var(--accent) 0%,
-    #9b8dfc 45%,
-    var(--accent-secondary) 75%,
-    var(--accent) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--accent) 0%,
+      #9b8dfc 45%,
+      var(--accent-secondary) 75%,
+      var(--accent) 100%);
   background-size: 220% auto;
   transition: background-position 0.5s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -143,6 +208,10 @@
   background-position: right center;
   transform: translateY(-2px);
   box-shadow: 0 10px 28px rgba(124, 109, 250, 0.38);
+}
+
+.light .btn-shimmer:hover {
+  box-shadow: 0 10px 28px rgba(99, 85, 232, 0.28);
 }
 
 .btn-shimmer:active {
@@ -154,6 +223,12 @@
   background: rgba(124, 109, 250, 0.09);
   border: 1px solid rgba(124, 109, 250, 0.22);
   color: #a89ef5;
+}
+
+.light .tag-pill {
+  background: rgba(99, 85, 232, 0.08);
+  border: 1px solid rgba(99, 85, 232, 0.20);
+  color: #5545c8;
 }
 
 /* ─── COMPONENT: OUTLINE BUTTON ──────────────────────────────── */
@@ -169,38 +244,101 @@
   background: rgba(124, 109, 250, 0.06);
 }
 
+.light .btn-outline:hover {
+  border-color: rgba(99, 85, 232, 0.35);
+  background: rgba(99, 85, 232, 0.05);
+}
+
+/* ─── COMPONENT: THEME TOGGLE ────────────────────────────────── */
+.theme-toggle {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.theme-toggle:hover {
+  border-color: rgba(124, 109, 250, 0.4);
+  color: var(--accent);
+  transform: scale(1.08);
+}
+
+.light .theme-toggle:hover {
+  border-color: rgba(99, 85, 232, 0.35);
+}
+
 /* ─── ANIMATIONS ─────────────────────────────────────────────── */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-14px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-14px);
+  }
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(28px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
 }
 
 @keyframes scroll-indicator {
-  0%, 100% { opacity: 0.4; transform: scaleY(1); }
-  50%       { opacity: 1;   transform: scaleY(0.6); }
+
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scaleY(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scaleY(0.6);
+  }
 }
 
-/* ─── ANIMATION UTILITIES — harus di @layer utilities ─────────── */
+/* ─── ANIMATION UTILITIES ────────────────────────────────────── */
 @layer utilities {
   .animate-slide-up {
     animation: slide-up 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -212,20 +350,40 @@
     opacity: 0;
   }
 
-  .delay-100 { animation-delay: 0.10s; }
-  .delay-200 { animation-delay: 0.20s; }
-  .delay-300 { animation-delay: 0.30s; }
-  .delay-400 { animation-delay: 0.42s; }
-  .delay-500 { animation-delay: 0.54s; }
-  .delay-600 { animation-delay: 0.66s; }
-  .delay-700 { animation-delay: 0.78s; }
+  .delay-100 {
+    animation-delay: 0.10s;
+  }
+
+  .delay-200 {
+    animation-delay: 0.20s;
+  }
+
+  .delay-300 {
+    animation-delay: 0.30s;
+  }
+
+  .delay-400 {
+    animation-delay: 0.42s;
+  }
+
+  .delay-500 {
+    animation-delay: 0.54s;
+  }
+
+  .delay-600 {
+    animation-delay: 0.66s;
+  }
+
+  .delay-700 {
+    animation-delay: 0.78s;
+  }
 
   .cursor-blink {
     animation: blink 1.1s step-end infinite;
   }
 }
 
-/* ─── COMPONENT: PROMPT INPUT TEXTAREA ────────────────────────── */
+/* ─── COMPONENT: PROMPT INPUT TEXTAREA ──────────────────────── */
 .prompt-input textarea {
   font-family: 'Syne', sans-serif;
   line-height: 1.5;
@@ -237,7 +395,6 @@
   scrollbar-color: var(--accent) var(--bg-card);
 }
 
-/* Scrollbar untuk Webkit browsers */
 .prompt-input textarea::-webkit-scrollbar {
   width: 4px;
 }
@@ -254,11 +411,17 @@
 /* ─── DIVIDER ─────────────────────────────────────────────────── */
 .divider-glow {
   height: 1px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(124, 109, 250, 0.35) 30%,
-    rgba(124, 109, 250, 0.35) 70%,
-    transparent
-  );
+  background: linear-gradient(to right,
+      transparent,
+      rgba(124, 109, 250, 0.35) 30%,
+      rgba(124, 109, 250, 0.35) 70%,
+      transparent);
+}
+
+.light .divider-glow {
+  background: linear-gradient(to right,
+      transparent,
+      rgba(99, 85, 232, 0.22) 30%,
+      rgba(99, 85, 232, 0.22) 70%,
+      transparent);
 }

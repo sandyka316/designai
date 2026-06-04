@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
+import AiDemoSection from "@/components/AiDemoSection";
 
 const EXAMPLE_PROMPTS = [
   "Minimalist logo for a coffee brand",
@@ -488,6 +489,8 @@ export default function Home() {
         </div>
       </section>
 
+      <AiDemoSection />
+
       {/* ─── CTA BOTTOM ───────────────────────────────────────── */}
       <section className="py-32 px-6 md:px-8">
         <div className="max-w-3xl mx-auto">
@@ -514,9 +517,12 @@ export default function Home() {
                   Start Generating for Free
                   <ArrowRight size={14} />
                 </button>
-                <button className="btn-outline flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold">
+                <a
+                  href="#ai-demo"
+                  className="btn-outline flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold"
+                >
                   View Examples
-                </button>
+                </a>
               </div>
             </div>
           </div>
