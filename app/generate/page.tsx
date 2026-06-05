@@ -31,30 +31,30 @@ const MODELS = [
 const TIPS = [
   {
     icon: "1",
-    title: "Deskripsikan dengan detail",
-    desc: "Semakin spesifik prompt Anda, semakin akurat hasilnya. Sebutkan gaya, warna, material, dan suasana yang diinginkan.",
+    title: "Describe in detail",
+    desc: "The more specific your prompt, the more accurate the result. Specify style, colors, materials, and the desired mood.",
     example:
       '"Minimalist white sneakers, premium matte leather, clean background, soft studio lighting, 8K"',
   },
   {
     icon: "2",
-    title: "Tambahkan konteks produk",
-    desc: "Sebutkan target audiens, kategori produk, atau penggunaan akhir agar AI menghasilkan visual yang tepat sasaran.",
+    title: "Add product context",
+    desc: "Include target audience, product category, or intended use so the AI can generate more relevant visuals.",
     example:
       '"Luxury perfume bottle for young women, gold and black, elegant, product photography"',
   },
   {
     icon: "3",
-    title: "Gunakan kata kunci kualitas",
-    desc: "Tambahkan kata seperti 4K, highly detailed, professional photography, sharp focus untuk meningkatkan kualitas output.",
+    title: "Use quality keywords",
+    desc: "Add terms like 4K, highly detailed, professional photography, and sharp focus to improve output quality.",
     example:
       '"Street fashion hoodie, urban aesthetic, 4K, highly detailed, commercial shoot"',
   },
   {
     icon: "4",
-    title: "Upload referensi gambar",
-    desc: "Klik ikon Wand di prompt input untuk upload gambar referensi. AI akan mengikuti gaya dan mood dari gambar tersebut.",
-    example: "Tekan ikon wand → pilih foto referensi → tulis prompt tambahan",
+    title: "Upload reference images",
+    desc: "Click the Wand icon in the prompt input to upload a reference image. The AI will follow its style and mood.",
+    example: "Tap the wand icon → choose a reference image → add your prompt",
   },
 ];
 
@@ -65,13 +65,9 @@ const MODEL_INFO = [
     icon: Zap,
     status: "free",
     speed: "~2–3 detik",
-    quality: "Tinggi",
-    desc: "Model standar dengan kualitas tinggi. Cocok untuk eksplorasi ide cepat, mockup awal, dan kebutuhan sehari-hari.",
-    features: [
-      "Generasi cepat",
-      "Kualitas komersial",
-      "Gratis untuk semua user",
-    ],
+    quality: "high",
+    desc: "Standard model with high quality output. Ideal for fast idea exploration, early mockups, and everyday use.",
+    features: ["Fast generation", "Commercial quality", "Free for all users"],
     color: "var(--accent)",
   },
   {
@@ -80,12 +76,12 @@ const MODEL_INFO = [
     icon: Crown,
     status: "pro",
     speed: "~5–8 detik",
-    quality: "Sangat Tinggi",
-    desc: "Model lanjutan dengan pemahaman konteks yang lebih dalam. Menghasilkan visual yang lebih detail dan fotorealistis.",
+    quality: "Very High",
+    desc: "Advanced model with deeper contextual understanding. Produces more detailed and photorealistic visuals.",
     features: [
-      "Detail ultra-tinggi",
-      "Pemahaman konteks lebih baik",
-      "Khusus Pro & Enterprise",
+      "Ultra-high detail",
+      "Better contextual understanding",
+      "Pro & Enterprise only",
     ],
     color: "#f59e0b",
   },
@@ -96,11 +92,11 @@ const MODEL_INFO = [
     status: "enterprise",
     speed: "~10–15 detik",
     quality: "Ultra",
-    desc: "Model flagship kami. Untuk kebutuhan produksi professional — katalog produk, campaign iklan, dan publikasi premium.",
+    desc: "Our flagship model for professional production needs — product catalogs, advertising campaigns, and premium publications.",
     features: [
-      "Kualitas production-grade",
+      "Production-grade quality",
       "Multi-angle generation",
-      "Khusus Enterprise",
+      "Enterprise only",
     ],
     color: "#ec4899",
   },
@@ -109,23 +105,23 @@ const MODEL_INFO = [
 const BENEFITS = [
   {
     icon: Zap,
-    title: "Hemat waktu & biaya",
-    desc: "Tidak perlu sewa fotografer atau studio. Hasilkan ratusan visual produk dalam hitungan menit.",
+    title: "Save time & cost",
+    desc: "No need to hire photographers or rent studios. Generate hundreds of product visuals in minutes.",
   },
   {
     icon: ImageIcon,
-    title: "Siap pakai komersial",
-    desc: "Output beresolusi tinggi langsung siap untuk e-commerce, katalog, media sosial, dan materi iklan.",
+    title: "Commercial-ready output",
+    desc: "High-resolution results ready for e-commerce, catalogs, social media, and advertising materials.",
   },
   {
     icon: Sparkles,
-    title: "Konsisten di semua produk",
-    desc: "Pertahankan gaya visual yang konsisten di seluruh lini produk hanya dengan template prompt yang sama.",
+    title: "Consistent across all products",
+    desc: "Maintain a consistent visual style across your entire product line with the same prompt template.",
   },
   {
     icon: Wand2,
     title: "Multi-modal input",
-    desc: "Gabungkan teks dan gambar referensi sekaligus untuk kontrol penuh atas hasil yang diinginkan.",
+    desc: "Combine text and reference images simultaneously for full control over the desired output.",
   },
 ];
 
@@ -139,6 +135,7 @@ function ImageGeneratorPage() {
   const [selectedModel, setSelectedModel] = useState("hd");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [openTip, setOpenTip] = useState<number | null>(null);
@@ -197,9 +194,29 @@ function ImageGeneratorPage() {
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
     setIsGenerating(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    setIsGenerating(false);
     setGeneratedImage(null);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch("http://localhost:8000/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: prompt.trim(), model: selectedModel }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        setErrorMessage(err.detail ?? "Terjadi kesalahan. Coba lagi.");
+        return;
+      }
+
+      const data = await res.json();
+      setGeneratedImage(data.image_url ?? null);
+    } catch (e) {
+      setErrorMessage("Tidak dapat terhubung ke server. Pastikan backend berjalan.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -372,7 +389,7 @@ function ImageGeneratorPage() {
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       placeholder="Describe what you'd like to generate..."
-                      className="w-full bg-transparent outline-none border-none resize-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] leading-relaxed py-5"
+                      className="w-full bg-transparent outline-none border-none resize-none text-xl text-[var(--text-primary)] placeholder:text-[var(--text-dim)] leading-relaxed py-5"
                       rows={1}
                       style={{ caretColor: "var(--accent)" }}
                     />
@@ -453,7 +470,8 @@ function ImageGeneratorPage() {
                   </div>
                   <div className="w-48 h-1 rounded-full bg-[var(--border)] overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-[var(--accent)]"
+                      className="h-full 
+                      ounded-full bg-[var(--accent)]"
                       style={{
                         animation: "shimmer 1.5s ease-in-out infinite",
                         background:
@@ -462,6 +480,22 @@ function ImageGeneratorPage() {
                       }}
                     />
                   </div>
+                </div>
+              ) : errorMessage ? (
+                <div className="relative z-10 flex flex-col items-center gap-4 text-center max-w-xs">
+                  <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                    <X size={28} className="text-red-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-red-400 mb-1">Generation Failed</p>
+                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">{errorMessage}</p>
+                  </div>
+                  <button
+                    onClick={() => setErrorMessage(null)}
+                    className="text-xs text-[var(--accent)] font-semibold hover:underline"
+                  >
+                    Try again
+                  </button>
                 </div>
               ) : generatedImage ? (
                 <div className="relative z-10 w-full max-w-sm">
@@ -508,7 +542,7 @@ function ImageGeneratorPage() {
               <Zap size={15} className="text-[var(--accent)]" />
             </div>
             <h2 className="text-xl font-extrabold text-[var(--text-primary)] tracking-tight">
-              Kenapa pakai AI Image Generator?
+              Why use an AI Image Generator?
             </h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -590,7 +624,7 @@ function ImageGeneratorPage() {
                 <div className="flex items-center gap-4 mb-4">
                   <div>
                     <p className="text-[10px] text-[var(--text-dim)] font-medium mb-0.5">
-                      Kecepatan
+                      Speed
                     </p>
                     <p className="text-xs font-bold text-[var(--text-primary)]">
                       {m.speed}
@@ -599,7 +633,7 @@ function ImageGeneratorPage() {
                   <div className="w-px h-6 bg-[var(--border)]" />
                   <div>
                     <p className="text-[10px] text-[var(--text-dim)] font-medium mb-0.5">
-                      Kualitas
+                      Quality
                     </p>
                     <p className="text-xs font-bold text-[var(--text-primary)]">
                       {m.quality}
@@ -634,7 +668,7 @@ function ImageGeneratorPage() {
               <Lightbulb size={15} className="text-[var(--accent)]" />
             </div>
             <h2 className="text-xl font-extrabold text-[var(--text-primary)] tracking-tight">
-              Tips menulis prompt yang bagus
+              How to write better prompts
             </h2>
           </div>
           <div className="flex flex-col gap-3">

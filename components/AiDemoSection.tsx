@@ -88,6 +88,7 @@ function Carousel({
   // Reset ke slide 0 saat gambar berubah (pindah tab)
   useEffect(() => {
     setCurrent(0);
+    setAnimating(false);
   }, [images]);
 
   // Auto-slide tiap 5 detik

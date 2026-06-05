@@ -34,7 +34,7 @@ const FEATURES = [
   },
   {
     icon: Wand2,
-    title: "Smart Recommendations",
+    title: "AI Recommendations",
     desc: "Hybrid filtering learns your preferences and surfaces designs tailored to your style.",
   },
   {
@@ -75,6 +75,72 @@ interface UploadedFile {
   id: string;
   file: File;
   previewUrl: string | null; // null = bukan image
+}
+
+// ─── FLOATING BUBBLES ─────────────────────────────────────────
+const BUBBLES: [number, number, number, number, number, number][] = [
+  [8, 12, 20, 12, 0, 0.38],
+  [82, 8, 16, 15, 1.5, 0.3],
+  [55, 6, 12, 10, 0.8, 0.42],
+  [25, 75, 28, 17, 2.2, 0.25],
+  [90, 55, 18, 14, 0.4, 0.34],
+  [5, 50, 14, 12, 3.1, 0.38],
+  [68, 82, 10, 10, 1.0, 0.4],
+  [40, 18, 8, 8, 2.5, 0.44],
+  [15, 35, 38, 19, 0.6, 0.2],
+  [75, 30, 10, 11, 1.8, 0.38],
+  [50, 90, 16, 13, 3.5, 0.3],
+  [92, 80, 7, 9, 0.2, 0.44],
+  [33, 55, 22, 16, 2.0, 0.24],
+  [60, 45, 6, 8, 4.0, 0.48],
+  [18, 88, 14, 11, 1.3, 0.34],
+  [85, 18, 32, 18, 2.8, 0.22],
+  [3, 70, 9, 10, 0.9, 0.38],
+  [47, 38, 18, 14, 3.3, 0.3],
+  [72, 65, 12, 10, 1.6, 0.36],
+  [28, 22, 7, 8, 4.5, 0.44],
+  [62, 15, 24, 16, 0.3, 0.26],
+  [10, 95, 10, 10, 2.7, 0.38],
+  [95, 40, 14, 12, 1.1, 0.32],
+  [38, 72, 45, 19, 3.8, 0.18],
+  [78, 92, 8, 9, 0.7, 0.42],
+  [20, 45, 12, 14, 5.0, 0.34],
+  [65, 28, 6, 7, 1.4, 0.46],
+  [44, 60, 16, 11, 3.0, 0.28],
+  [88, 35, 10, 13, 2.3, 0.36],
+  [7, 22, 20, 16, 4.2, 0.24],
+];
+
+function FloatingBubbles() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+      {BUBBLES.map(([x, y, size, dur, delay, opacity], i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            left: `${x}%`,
+            top: `${y}%`,
+            width: `${size}px`,
+            height: `${size}px`,
+            opacity,
+            // pakai bubble-drift agar gerak ke segala arah, bukan cuma naik-turun
+            animation: `bubble-drift-${i % 5} ${dur}s ease-in-out ${delay}s infinite alternate`,
+            background: i % 3 === 0
+              ? "radial-gradient(circle at 35% 35%, rgba(124,109,250,0.8), rgba(124,109,250,0.1) 70%)"
+              : i % 3 === 1
+              ? "radial-gradient(circle at 35% 35%, rgba(79,172,254,0.75), rgba(79,172,254,0.08) 70%)"
+              : "radial-gradient(circle at 35% 35%, rgba(155,141,252,0.7), rgba(124,109,250,0.06) 70%)",
+            border: i % 2 === 0
+              ? "1px solid rgba(124,109,250,0.35)"
+              : "1px solid rgba(79,172,254,0.28)",
+            transform: "translate(-50%, -50%)",
+            willChange: "transform",
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export default function Home() {
@@ -169,7 +235,7 @@ export default function Home() {
         {/* Decorative orbs */}
         <div className="absolute top-1/4 left-1/4 w-[800px] h-[800px] bg-[var(--accent)]/3 rounded-full blur-[160px] pointer-events-none" />
         <div className="absolute bottom-1/3 right-1/4 w-[600px] h-[600px] bg-[var(--accent-secondary)]/3 rounded-full blur-[130px] pointer-events-none" />
-
+        <FloatingBubbles />
         <div className="relative z-20 w-full max-w-6xl mx-auto px-6 md:px-12 text-center">
           {/* Badge */}
           <div className="animate-slide-up inline-flex items-center gap-4 tag-pill text-xs font-semibold px-4 py-2 rounded-full mt-16 mb-10 tracking-widest">
@@ -442,9 +508,6 @@ export default function Home() {
                 <p className="text-sm text-[var(--text-muted)] leading-relaxed">
                   {feat.desc}
                 </p>
-                <div className="flex items-center gap-1 mt-5 text-xs text-[var(--accent)] font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  Learn more <ChevronRight size={12} />
-                </div>
               </div>
             ))}
           </div>

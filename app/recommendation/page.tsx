@@ -70,6 +70,7 @@ const FEATURES = [
 
 export default function RecommendationsPage() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<
@@ -80,6 +81,7 @@ export default function RecommendationsPage() {
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) return;
+    setUploadedFile(file);
     const reader = new FileReader();
     reader.onload = (e) => {
       setUploadedImage(e.target?.result as string);
@@ -96,11 +98,43 @@ export default function RecommendationsPage() {
   };
 
   const handleAnalyze = async () => {
-    if (!uploadedImage) return;
+    if (!uploadedFile) return;
     setIsAnalyzing(true);
-    await new Promise((r) => setTimeout(r, 2500));
-    setIsAnalyzing(false);
-    setAnalysisResult(DUMMY_ANALYSIS);
+    setAnalysisResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadedFile);
+
+      const res = await fetch("http://localhost:8000/api/recommendation", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("Recommendation error:", err.detail);
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const data = await res.json();
+
+      // Map snake_case dari backend ke camelCase yang dipakai UI
+      setAnalysisResult({
+        dominantColors: data.dominant_colors,
+        style: data.style,
+        keyElements: data.key_elements,
+        mood: data.mood,
+        recommendedUse: data.recommended_use,
+        keywords: data.keywords,
+        generatedPrompt: data.generated_prompt,
+      });
+    } catch (e) {
+      console.error("Network error:", e);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleCopyPrompt = () => {
@@ -112,6 +146,7 @@ export default function RecommendationsPage() {
 
   const removeImage = () => {
     setUploadedImage(null);
+    setUploadedFile(null);
     setAnalysisResult(null);
   };
 
@@ -464,6 +499,102 @@ export default function RecommendationsPage() {
                 <span className="text-xs font-semibold text-[var(--text-muted)]">
                   {feat.label}
                 </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── HOW IT WORKS ─────────────────────────────────────── */}
+        <div className="mt-20">
+          <div className="text-center mb-8">
+            <p className="text-lg font-bold text-[var(--accent)] tracking-widest uppercase mb-2">
+              How It Works
+            </p>
+            <h2 className="text-xl md:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
+              3 Steps to Smart Recommendations
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                step: "01",
+                icon: Upload,
+                title: "Upload a Reference Image",
+                desc: "Drop any image — artwork, mood board, photo, or inspiration. The AI accepts any visual style.",
+              },
+              {
+                step: "02",
+                icon: Wand2,
+                title: "AI Analyzes Style & Mood",
+                desc: "Our AI extracts dominant colors, style keywords, mood, and aesthetic elements from your image.",
+              },
+              {
+                step: "03",
+                icon: ShoppingBag,
+                title: "Get Product Recommendations",
+                desc: "Instantly receive 8 fashion product suggestions matched to your image's vibe, plus a ready-to-use AI prompt.",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="relative feature-card rounded-2xl p-6 overflow-hidden"
+              >
+                {/* Step number watermark */}
+                <div className="absolute top-4 right-5 text-6xl font-black text-[var(--accent)]/6 leading-none select-none">
+                  {item.step}
+                </div>
+                <div className="relative z-10">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center mb-4">
+                    <item.icon size={18} className="text-[var(--accent)]" />
+                  </div>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── WHY USE THIS ──────────────────────────────────────── */}
+        <div className="mt-10 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-6 md:p-8">
+          <p className="text-xs font-bold text-[var(--accent)] tracking-widest uppercase mb-5">
+            Why Use AI Recommendations?
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Sparkles,
+                title: "Skip the Guesswork",
+                desc: "No need to manually match colors or brainstorm products. AI does the heavy lifting in seconds.",
+              },
+              {
+                icon: Lightbulb,
+                title: "Prompt Ready for Generation",
+                desc: "Every analysis outputs a polished AI prompt you can directly use in the Image Generator.",
+              },
+              {
+                icon: Palette,
+                title: "Style-Accurate Results",
+                desc: "Recommendations are based on real style analysis — not random suggestions.",
+              },
+            ].map((item, i) => (
+              <div key={i} className="flex gap-4">
+                <div className="w-9 h-9 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <item.icon size={15} className="text-[var(--accent)]" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-[var(--text-primary)] mb-1">
+                    {item.title}
+                  </h4>
+                  <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
