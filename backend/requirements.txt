@@ -1,6 +1,30 @@
+# Web Framework
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
-pydantic==2.9.0
-google-genai==2.8.0
-python-dotenv==1.0.1
 python-multipart==0.0.12
+
+# Data Validation
+pydantic==2.9.0
+pydantic-settings==2.5.2
+
+# AI
+google-genai==2.8.0
+replicate==1.0.7
+
+# Environment
+python-dotenv==1.0.1
+
+# Database - PostgreSQL + SQLAlchemy async
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.29.0
+alembic==1.13.3
+
+# Redis
+redis[hiredis]==5.1.1
+
+# Auth
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+
+# Background tasks / job queue
+arq==0.26.1

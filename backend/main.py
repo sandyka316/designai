@@ -1,19 +1,79 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import uuid
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from core.config import settings
+from core.redis import get_redis, close_redis
+from database.session import engine, AsyncSessionLocal
+from database.base import Base
 from routes import generate, recommendation, dashboard
+
+# Import semua model agar Base.metadata mengetahui tabel yang ada
+import models  # noqa: F401
+
+# Guest user UUID — sama dengan yang dipakai di routes
+_GUEST_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
+
+
+async def _ensure_guest_user() -> None:
+    """Pastikan guest user ada di tabel users (untuk mode tanpa auth)."""
+    from sqlalchemy import select
+    from models.user import User
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(User).where(User.id == _GUEST_USER_ID))
+        if result.scalar_one_or_none() is None:
+            guest = User(
+                id=_GUEST_USER_ID,
+                email="guest@designai.local",
+                username="guest",
+                hashed_password="not-used-guest-account",
+                is_active=True,
+                is_verified=True,
+                credits_total=50,
+                credits_used=0,
+            )
+            session.add(guest)
+            await session.commit()
+            print("[DesignAI] Guest user created in database.")
+        else:
+            print("[DesignAI] Guest user already exists.")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("DesignAI Backend starting...")
+    # ── Startup ────────────────────────────────────────────────────────────────
+    print(f"[DesignAI] Starting in '{settings.APP_ENV}' mode...")
+
+    # Inisialisasi tabel DB (hanya untuk dev; production pakai alembic upgrade head)
+    if settings.APP_ENV == "development":
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("[DesignAI] Database tables ready.")
+
+    # Seed guest user supaya FK constraint pada generation_history tidak gagal
+    await _ensure_guest_user()
+
+    # Ping Redis untuk verifikasi koneksi
+    try:
+        redis = get_redis()
+        await redis.ping()
+        print("[DesignAI] Redis connected.")
+    except Exception as e:
+        print(f"[DesignAI] WARNING: Redis not available — {e}")
+
     yield
-    print("DesignAI Backend shutting down...")
+
+    # ── Shutdown ───────────────────────────────────────────────────────────────
+    await engine.dispose()
+    await close_redis()
+    print("[DesignAI] Backend shut down cleanly.")
 
 
 app = FastAPI(
-    title="DesignAI Backend",
+    title=settings.APP_NAME,
     description="Backend API for DesignAI — AI-powered design generation & recommendations",
     version="1.0.0",
     lifespan=lifespan,
@@ -39,4 +99,18 @@ async def root():
 
 @app.get("/health", tags=["Health"])
 async def health():
-    return {"status": "healthy"}
+    # Cek Redis
+    redis_ok = False
+    try:
+        redis = get_redis()
+        await redis.ping()
+        redis_ok = True
+    except Exception:
+        pass
+
+    return {
+        "status": "healthy",
+        "database": "postgresql",
+        "redis": "connected" if redis_ok else "unavailable",
+        "env": settings.APP_ENV,
+    }

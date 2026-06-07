@@ -24,6 +24,7 @@ class GenerateResponse(BaseModel):
     success: bool
     image_url: str | None = None
     prompt_used: str
+    enhanced_prompt: str | None = None   # prompt setelah di-enhance oleh Gemini
     model_used: str
     generation_time_ms: int
     message: str = "OK"
