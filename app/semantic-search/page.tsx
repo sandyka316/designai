@@ -69,7 +69,7 @@ function similarityBar(score: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("id-ID", {
+  return new Date(iso).toLocaleDateString("en-US", {
     day: "2-digit", month: "short", year: "numeric",
   });
 }
@@ -141,7 +141,7 @@ export default function SemanticSearchPage() {
         message: data.message,
       });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Terjadi kesalahan";
+      const message = err instanceof Error ? err.message : "An error occurred";
       setError(message);
     } finally {
       setLoading(false);
@@ -173,8 +173,8 @@ export default function SemanticSearchPage() {
             </h1>
           </div>
           <p className="text-zinc-400 text-sm max-w-2xl">
-            Vector Space Model menggunakan <span className="text-violet-300 font-medium">CLIP embeddings (512-dim)</span> untuk
-            mencari design berdasarkan kemiripan semantik — bukan sekadar keyword matching.
+            Vector Space Model using <span className="text-violet-300 font-medium">CLIP embeddings (512-dim)</span> to
+            search designs based on semantic similarity — not just keyword matching.
           </p>
         </div>
 
@@ -221,10 +221,10 @@ export default function SemanticSearchPage() {
           <div className="flex gap-3">
             <Info className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
             <div className="text-sm text-zinc-300">
-              <span className="font-medium text-blue-300">Cara kerja Vector Space Model: </span>
-              Query kamu diubah menjadi vektor 512 dimensi oleh CLIP text encoder, lalu dibandingkan
-              dengan setiap design di corpus menggunakan <span className="text-white font-medium">cosine similarity</span>.
-              Hasilnya diranking dari yang paling mirip secara semantik. Similarity 1.0 = identik, 0.0 = tidak berhubungan.
+              <span className="font-medium text-blue-300">How Vector Space Model works: </span>
+              Your query is transformed into a 512-dimensional vector by the CLIP text encoder, then compared
+              against every design in the corpus using <span className="text-white font-medium">cosine similarity</span>.
+              Results are ranked from most to least semantically similar. Similarity 1.0 = identical, 0.0 = unrelated.
             </div>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function SemanticSearchPage() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Cari design secara semantik... cth: dark minimal logo for tech brand"
+                placeholder="Search designs semantically... e.g: dark minimal logo for tech brand"
                 className="w-full pl-12 pr-4 py-4 bg-zinc-900 border border-zinc-700 rounded-xl text-white 
                            placeholder-zinc-500 focus:outline-none focus:border-violet-500 focus:ring-1 
                            focus:ring-violet-500/50 transition-all"
@@ -292,7 +292,7 @@ export default function SemanticSearchPage() {
         {/* ── Example Queries ─────────────────────────────────────────────── */}
         {!hasSearched && (
           <div className="mb-8">
-            <p className="text-xs text-zinc-500 mb-2">Coba contoh query:</p>
+            <p className="text-xs text-zinc-500 mb-2">Try example queries:</p>
             <div className="flex flex-wrap gap-2">
               {exampleQueries.map((q) => (
                 <button
@@ -327,7 +327,7 @@ export default function SemanticSearchPage() {
             </span>
             <span className="text-zinc-600">•</span>
             <span>
-              Ditemukan <span className="text-violet-300 font-medium">{meta.total_results}</span> dari{" "}
+              Found <span className="text-violet-300 font-medium">{meta.total_results}</span> of{" "}
               <span className="text-white">{meta.total_corpus}</span> corpus
             </span>
             <span className="text-zinc-600">•</span>
@@ -340,8 +340,8 @@ export default function SemanticSearchPage() {
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Loader2 className="w-10 h-10 text-violet-400 animate-spin" />
             <div className="text-center">
-              <p className="text-zinc-300 font-medium">Encoding query & menghitung similarity...</p>
-              <p className="text-zinc-500 text-sm mt-1">CLIP sedang memproses vector embeddings</p>
+              <p className="text-zinc-300 font-medium">Encoding query & computing similarity...</p>
+              <p className="text-zinc-500 text-sm mt-1">CLIP is processing vector embeddings</p>
             </div>
           </div>
         )}
@@ -350,9 +350,9 @@ export default function SemanticSearchPage() {
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Search className="w-12 h-12 text-zinc-600" />
             <div className="text-center">
-              <p className="text-zinc-400 font-medium">Tidak ada hasil ditemukan</p>
+              <p className="text-zinc-400 font-medium">No results found</p>
               <p className="text-zinc-500 text-sm mt-1">
-                {meta?.message || "Coba query yang berbeda atau kurangi min similarity threshold"}
+                {meta?.message || "Try a different query or lower the min similarity threshold"}
               </p>
             </div>
           </div>
@@ -460,28 +460,28 @@ export default function SemanticSearchPage() {
           <div className="mt-12 p-6 rounded-xl border border-zinc-800 bg-zinc-900/30">
             <h3 className="text-sm font-semibold text-zinc-300 mb-4 flex items-center gap-2">
               <Cpu className="w-4 h-4 text-violet-400" />
-              Bagaimana Vector Space Model Bekerja?
+              How Does Vector Space Model Work?
             </h3>
             <div className="grid md:grid-cols-3 gap-4">
               {[
                 {
                   step: "1",
                   title: "Text → Vector",
-                  desc: "CLIP text encoder mengubah query kamu menjadi vektor 512 dimensi yang merepresentasikan makna semantik teks.",
+                  desc: "The CLIP text encoder converts your query into a 512-dimensional vector that represents the semantic meaning of the text.",
                   color: "border-violet-500/20 bg-violet-500/5",
                   textColor: "text-violet-400",
                 },
                 {
                   step: "2",
                   title: "Cosine Similarity",
-                  desc: "Setiap prompt di corpus dibandingkan dengan query menggunakan cosine similarity — mengukur sudut antara dua vektor.",
+                  desc: "Every prompt in the corpus is compared to your query using cosine similarity — measuring the angle between two vectors.",
                   color: "border-blue-500/20 bg-blue-500/5",
                   textColor: "text-blue-400",
                 },
                 {
                   step: "3",
                   title: "Ranked Results",
-                  desc: "Design diurutkan dari yang paling mirip secara semantik. Skor 1.0 = identik, 0.0 = tidak berhubungan.",
+                  desc: "Designs are ranked from most to least semantically similar. Score 1.0 = identical, 0.0 = unrelated.",
                   color: "border-emerald-500/20 bg-emerald-500/5",
                   textColor: "text-emerald-400",
                 },

@@ -14,6 +14,14 @@ import {
   FileText,
   X,
   Paperclip,
+  BarChart2,
+  PieChart,
+  Search,
+  Brain,
+  Lightbulb,
+  TrendingUp,
+  SlidersHorizontal,
+  GitBranch,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -765,6 +773,218 @@ export default function Home() {
                   }}
                 />
               </SpotlightCard>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── ADVANCED FEATURES ────────────────────────────────── */}
+      <section className="py-20 px-6 md:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 tag-pill text-xs font-semibold px-3.5 py-1.5 rounded-full mb-5 tracking-wide uppercase">
+              <Sparkles size={11} className="text-[var(--accent)]" />
+              Advanced Tools
+            </div>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-[var(--text-primary)] mb-4 tracking-tight">
+              Powerful features at your fingertips
+            </h2>
+            <p className="text-[var(--text-muted)] text-lg max-w-lg mx-auto leading-relaxed">
+              Go beyond generation — explore AI-powered analytics, insights, and intelligent design tools.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                icon: BarChart2,
+                title: "Analytics Dashboard",
+                desc: "Track your design generation history, usage trends, model performance metrics, and generation time insights — all in one beautiful dashboard.",
+                href: "/analytics",
+                hex: "#06b6d4",
+                hex2: "#3b82f6",
+                rgb: { r: 6, g: 182, b: 212 },
+                tag: "Analytics",
+              },
+              {
+                icon: PieChart,
+                title: "BI Dashboard",
+                desc: "Business intelligence powered by Apriori association rules and statistical analysis. Discover design patterns, popular style combinations, and market trends.",
+                href: "/admin/bi",
+                hex: "#f59e0b",
+                hex2: "#ef4444",
+                rgb: { r: 245, g: 158, b: 11 },
+                tag: "Business Intel",
+              },
+              {
+                icon: Search,
+                title: "Semantic Search",
+                desc: "Find designs by meaning, not just keywords. Uses CLIP embeddings (512-dim) and Vector Space Model cosine similarity to retrieve semantically related designs.",
+                href: "/semantic-search",
+                hex: "#8b5cf6",
+                hex2: "#6366f1",
+                rgb: { r: 139, g: 92, b: 246 },
+                tag: "VSM · CLIP",
+              },
+              {
+                icon: Lightbulb,
+                title: "Smart Prompt",
+                desc: "AI-enhanced prompt engineering tools: evolve your prompts, predict ratings before generating, and estimate credit scores with fuzzy logic.",
+                href: "/smart-prompt",
+                hex: "#10b981",
+                hex2: "#84cc16",
+                rgb: { r: 16, g: 185, b: 129 },
+                tag: "Prompt AI",
+              },
+              {
+                icon: Brain,
+                title: "Deep Learning Insights",
+                desc: "LSTM-based time-series forecasting of design trends combined with CLIP image analysis. Understand aesthetic patterns and predict future design directions.",
+                href: "/deep-learning",
+                hex: "#ec4899",
+                hex2: "#f43f5e",
+                rgb: { r: 236, g: 72, b: 153 },
+                tag: "LSTM · CLIP",
+              },
+              {
+                icon: SlidersHorizontal,
+                title: "Rating Predictor",
+                desc: "Predict the quality rating of a design prompt before generating it. Uses a trained ML model to score prompts from 1–5 based on historical patterns.",
+                href: "/smart-prompt/rating-predictor",
+                hex: "#f97316",
+                hex2: "#fbbf24",
+                rgb: { r: 249, g: 115, b: 22 },
+                tag: "ML Score",
+              },
+              {
+                icon: GitBranch,
+                title: "Prompt Evolution",
+                desc: "Automatically evolve and improve your design prompts using AI-driven mutation and selection. Generate multiple prompt variants and pick the best.",
+                href: "/smart-prompt/prompt-evolution",
+                hex: "#a78bfa",
+                hex2: "#7c3aed",
+                rgb: { r: 167, g: 139, b: 250 },
+                tag: "Genetic AI",
+              },
+              {
+                icon: TrendingUp,
+                title: "AI Recommendations",
+                desc: "Hybrid collaborative + content-based filtering learns your aesthetic preferences over time and surfaces design recommendations tailored to your unique style.",
+                href: "/recommendation",
+                hex: "#2dd4bf",
+                hex2: "#5eead4",
+                rgb: { r: 45, g: 212, b: 191 },
+                tag: "Hybrid Filter",
+              },
+              {
+                icon: Layers,
+                title: "Fuzzy Credit Score",
+                desc: "Estimate your design credit score using fuzzy logic membership functions. Understand how your usage patterns and design quality translate into a trust score.",
+                href: "/smart-prompt/fuzzy-credit",
+                hex: "#64748b",
+                hex2: "#94a3b8",
+                rgb: { r: 100, g: 116, b: 139 },
+                tag: "Fuzzy Logic",
+              },
+            ].map((feat) => (
+              <a
+                key={feat.title}
+                href={feat.href}
+                className="group relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-7 transition-all duration-400 hover:border-opacity-80 hover:shadow-2xl hover:-translate-y-1 block"
+                style={
+                  {
+                    "--feat-hex": feat.hex,
+                    "--feat-hex2": feat.hex2,
+                    "--feat-r": feat.rgb.r,
+                    "--feat-g": feat.rgb.g,
+                    "--feat-b": feat.rgb.b,
+                  } as React.CSSProperties
+                }
+                onMouseEnter={(e) => {
+                  const el = e.currentTarget;
+                  el.style.borderColor = feat.hex + "80";
+                  el.style.boxShadow = `0 0 0 1px ${feat.hex}40, 0 8px 32px rgba(0,0,0,0.4), 0 20px 60px rgba(${feat.rgb.r},${feat.rgb.g},${feat.rgb.b},0.25)`;
+                  el.style.background = `linear-gradient(135deg, rgba(${feat.rgb.r},${feat.rgb.g},${feat.rgb.b},0.08) 0%, var(--bg-card) 50%)`;
+                }}
+                onMouseLeave={(e) => {
+                  const el = e.currentTarget;
+                  el.style.borderColor = "";
+                  el.style.boxShadow = "";
+                  el.style.background = "";
+                }}
+              >
+                {/* Top edge glow */}
+                <div
+                  className="pointer-events-none absolute top-0 left-0 right-0 h-px opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background: `linear-gradient(90deg, transparent, ${feat.hex}, ${feat.hex2}, transparent)`,
+                    boxShadow: `0 0 12px ${feat.hex}`,
+                  }}
+                />
+
+                {/* Icon */}
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center mb-5 transition-all duration-300 group-hover:scale-110"
+                  style={{
+                    background: `${feat.hex}18`,
+                    border: `1px solid ${feat.hex}35`,
+                  }}
+                >
+                  <feat.icon size={18} style={{ color: feat.hex }} />
+                </div>
+
+                {/* Tag */}
+                <div className="mb-3">
+                  <span
+                    className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full"
+                    style={{
+                      color: feat.hex,
+                      background: `${feat.hex}18`,
+                      border: `1px solid ${feat.hex}30`,
+                    }}
+                  >
+                    {feat.tag}
+                  </span>
+                </div>
+
+                {/* Title — gets bold/bright on hover */}
+                <h3
+                  className="text-base font-semibold mb-2.5 transition-all duration-200 group-hover:font-extrabold"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  <span className="group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:text-transparent transition-all duration-200"
+                    style={
+                      {
+                        "--tw-gradient-from": feat.hex,
+                        "--tw-gradient-to": feat.hex2,
+                      } as React.CSSProperties
+                    }
+                  >
+                    {feat.title}
+                  </span>
+                </h3>
+
+                {/* Desc — slightly brighter on hover */}
+                <p className="text-sm text-[var(--text-muted)] leading-relaxed transition-colors duration-200 group-hover:text-zinc-300">
+                  {feat.desc}
+                </p>
+
+                {/* Bottom accent bar */}
+                <div
+                  className="mt-5 h-0.5 rounded-full w-10 transition-all duration-500 group-hover:w-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${feat.hex}, ${feat.hex2})`,
+                  }}
+                />
+
+                {/* Arrow hint */}
+                <div
+                  className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-all duration-200 group-hover:translate-x-1"
+                  style={{ color: feat.hex }}
+                >
+                  <ArrowRight size={16} />
+                </div>
+              </a>
             ))}
           </div>
         </div>
