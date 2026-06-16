@@ -20,8 +20,13 @@ import {
   RefreshCw,
   Loader2,
   AlertCircle,
+  Search,
+  X,
+  Brain,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import SpotlightCard from "@/components/SpotlightCard";
 
 // ─── TYPES (sesuai DashboardResponse dari backend) ─────────────────────────
 interface StatItem {
@@ -65,6 +70,17 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // ── Daily limits state ───────────────────────────────────────────────────
+  const [genLimit, setGenLimit] = useState<{ used_today: number; daily_limit: number; remaining: number } | null>(null);
+  const [recLimit, setRecLimit] = useState<{ used_today: number; daily_limit: number; remaining: number } | null>(null);
+
+  // ── Search state ─────────────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<GalleryItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // ── Fetch dashboard dari backend ────────────────────────────────────────
   const fetchDashboard = async () => {
@@ -87,7 +103,116 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDashboard();
+    // Fetch daily limits in parallel
+    fetch("http://127.0.0.1:8000/api/limits/status/generate")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setGenLimit(d))
+      .catch(() => {});
+    fetch("http://127.0.0.1:8000/api/limits/status/recommendation")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => d && setRecLimit(d))
+      .catch(() => {});
   }, []);
+
+  // ── Debounced search (300ms) ──────────────────────────────────────────────
+  useEffect(() => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setIsSearching(false);
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchLoading(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `http://127.0.0.1:8000/api/search?q=${encodeURIComponent(trimmed)}`
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        setSearchResults(Array.isArray(json) ? json : []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // ── Hapus gambar ─────────────────────────────────────────────────────────
+  const handleDelete = async (id: string) => {
+    if (!confirm("Hapus gambar ini dari dashboard?")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/dashboard/generation/${id}`,
+        { method: "DELETE" }
+      );
+      if (res.ok) {
+        // Hapus dari state lokal tanpa refetch
+        setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                gallery_items: prev.gallery_items.filter((g) => g.id !== id),
+                recent_activity: prev.recent_activity.filter((a) => a.id !== id),
+              }
+            : prev
+        );
+      }
+    } catch (e) {
+      console.error("Delete failed:", e);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // ── Helpers: format nama file download ───────────────────────────────────
+  const buildFileName = () => {
+    const now = new Date();
+    const month = now.toLocaleString("en-US", { month: "short" });
+    const day = now.getDate();
+    const year = now.getFullYear();
+    const hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const seconds = String(now.getSeconds()).padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const hours12 = hours % 12 === 0 ? 12 : hours % 12;
+    const timeStr = `${String(hours12).padStart(2, "0")}_${minutes}_${seconds} ${ampm}`;
+    return `DesignAI Image ${month} ${day}, ${year}, ${timeStr}.png`;
+  };
+
+  // ── Download gambar (via proxy agar tidak kena CORS) ─────────────────────
+  const handleDownload = async (imageUrl: string) => {
+    const fileName = buildFileName();
+    try {
+      // Gunakan API proxy internal agar fetch tidak diblokir CORS
+      const proxyUrl = `/api/download?url=${encodeURIComponent(imageUrl)}`;
+      const response = await fetch(proxyUrl);
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+    } catch (e) {
+      console.error("[handleDownload] error:", e);
+      // Fallback terakhir: buka di tab baru
+      window.open(imageUrl, "_blank");
+    }
+  };
 
   // ── Derived: credits ─────────────────────────────────────────────────────
   const creditsLeft = data
@@ -97,13 +222,14 @@ export default function DashboardPage() {
   const creditsPct =
     creditsTotal > 0 ? Math.round((creditsLeft / creditsTotal) * 100) : 0;
 
-  // ── Gallery filtered by tab ──────────────────────────────────────────────
+  // ── Gallery filtered by tab / search ────────────────────────────────────
   const galleryItems = data?.gallery_items ?? [];
-  // "saved" & "recent" tab di UI hanya filter tampilan — karena backend sudah
-  // return gallery (success+image) dan recent_activity secara terpisah.
-  // Tab "all" = semua gallery_items, "recent" = 4 terbaru, "saved" = sama dengan all
-  const filteredGallery =
-    activeTab === "recent" ? galleryItems.slice(0, 4) : galleryItems;
+  // Ketika search aktif: pakai searchResults. Ketika tidak: filter by tab.
+  const displayedGallery = isSearching
+    ? searchResults
+    : activeTab === "recent"
+    ? galleryItems.slice(0, 4)
+    : galleryItems;
 
   // ── Loading state ────────────────────────────────────────────────────────
   if (loading) {
@@ -118,6 +244,7 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
+        <Footer />
       </main>
     );
   }
@@ -143,6 +270,7 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+        <Footer />
       </main>
     );
   }
@@ -150,8 +278,7 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-[var(--bg-primary)]">
       <Navbar hideCenterNav />
-
-      <div className="pt-24 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
+      <div className="pt-24 pb-20 px-6 md:px-12 max-w-7xl mx-auto relative z-10">
         {/* ─── HEADER ─────────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
           <div>
@@ -184,8 +311,15 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           {(data?.stats ?? []).map((stat, i) => {
             const Icon = STAT_ICONS[i] ?? ImageIcon;
+            const colors = [
+              { hex: "#7c6dfa", hex2: "#4facfe", rgb: { r: 124, g: 109, b: 250 } },
+              { hex: "#10b981", hex2: "#06b6d4", rgb: { r: 16, g: 185, b: 129 } },
+              { hex: "#f59e0b", hex2: "#fb923c", rgb: { r: 245, g: 158, b: 11 } },
+              { hex: "#8b5cf6", hex2: "#ec4899", rgb: { r: 139, g: 92, b: 246 } },
+            ];
+            const c = colors[i % colors.length];
             return (
-              <div key={i} className="feature-card rounded-2xl p-5">
+              <SpotlightCard key={i} hex={c.hex} hex2={c.hex2} rgb={c.rgb} lift={6} className="p-5">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-9 h-9 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center">
                     <Icon size={16} className="text-[var(--accent)]" />
@@ -200,7 +334,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] text-[var(--accent)] font-medium">
                   {stat.change}
                 </p>
-              </div>
+              </SpotlightCard>
             );
           })}
         </div>
@@ -247,28 +381,96 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* ── LEFT: Gallery ── */}
           <div className="lg:col-span-2">
-            {/* Gallery header */}
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-1">
-                {(["all", "saved", "recent"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 capitalize ${
-                      activeTab === tab
-                        ? "bg-[var(--accent)] text-white"
-                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium">
-                  <Filter size={12} />
-                  Filter
+            {/* Search bar */}
+            <div className="relative mb-4">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
+              />
+              <input
+                type="text"
+                placeholder='Search your generations… (e.g. "minimalist tote bag blue")'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-10 py-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]
+                           text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]
+                           focus:outline-none focus:border-[var(--accent)]/50 transition-colors"
+              />
+              {searchLoading && (
+                <Loader2
+                  size={14}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[var(--accent)]"
+                />
+              )}
+              {searchQuery && !searchLoading && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  title="Clear search"
+                >
+                  <X size={14} />
                 </button>
+              )}
+            </div>
+
+            {/* Search result count badge */}
+            {isSearching && !searchLoading && (
+              <p className="text-xs text-[var(--text-muted)] mb-3">
+                <span className="font-semibold text-[var(--accent)]">
+                  {searchResults.length}
+                </span>{" "}
+                result{searchResults.length !== 1 ? "s" : ""} for{" "}
+                <span className="italic">&ldquo;{searchQuery.trim()}&rdquo;</span>
+              </p>
+            )}
+            {isSearching && searchLoading && (
+              <p className="text-xs text-[var(--text-muted)] mb-3">Searching…</p>
+            )}
+
+            {/* Gallery header — sembunyikan tab saat search aktif */}
+            {!isSearching && (
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-1">
+                  {(["all", "saved", "recent"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 capitalize ${
+                        activeTab === tab
+                          ? "bg-[var(--accent)] text-white"
+                          : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button className="btn-outline flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium">
+                    <Filter size={12} />
+                    Filter
+                  </button>
+                  <div className="flex items-center gap-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={`p-1.5 rounded-md transition-colors ${viewMode === "grid" ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+                    >
+                      <Grid3X3 size={13} />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
+                    >
+                      <List size={13} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* View mode controls saat search aktif */}
+            {isSearching && (
+              <div className="flex items-center justify-end mb-5">
                 <div className="flex items-center gap-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg p-1">
                   <button
                     onClick={() => setViewMode("grid")}
@@ -284,12 +486,12 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Gallery grid */}
             {viewMode === "grid" ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {filteredGallery.map((item) => (
+                {displayedGallery.map((item) => (
                   <div
                     key={item.id}
                     className="group relative aspect-square rounded-2xl overflow-hidden border border-[var(--border)] bg-[var(--bg-card)] cursor-pointer"
@@ -323,25 +525,50 @@ export default function DashboardPage() {
                       </p>
                       <div className="flex items-center gap-1.5 mt-1">
                         {item.image_url && (
-                          <a
-                            href={item.image_url}
-                            download={`design-${item.id}.png`}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(item.image_url!);
+                            }}
                             className="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
-                            onClick={(e) => e.stopPropagation()}
+                            title="Download"
                           >
                             <Download size={11} className="text-white" />
-                          </a>
+                          </button>
                         )}
-                        <button className="w-7 h-7 rounded-lg bg-white/15 hover:bg-red-500/60 flex items-center justify-center transition-colors">
-                          <Trash2 size={11} className="text-white" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(item.id);
+                          }}
+                          disabled={deletingId === item.id}
+                          className="w-7 h-7 rounded-lg bg-white/15 hover:bg-red-500/60 flex items-center justify-center transition-colors disabled:opacity-50"
+                          title="Hapus"
+                        >
+                          {deletingId === item.id ? (
+                            <Loader2 size={11} className="text-white animate-spin" />
+                          ) : (
+                            <Trash2 size={11} className="text-white" />
+                          )}
                         </button>
                         <a
                           href={`/generate?q=${encodeURIComponent(item.prompt)}`}
                           className="w-7 h-7 rounded-lg bg-white/15 hover:bg-[var(--accent)]/60 flex items-center justify-center transition-colors"
                           onClick={(e) => e.stopPropagation()}
+                          title="Generate ulang"
                         >
                           <RefreshCw size={11} className="text-white" />
                         </a>
+                        {item.image_url && (
+                          <a
+                            href={`/deep-learning?prompt=${encodeURIComponent(item.prompt)}&image_url=${encodeURIComponent(item.image_url)}`}
+                            className="w-7 h-7 rounded-lg bg-white/15 hover:bg-purple-500/60 flex items-center justify-center transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                            title="CLIP Score — cek kesesuaian gambar dengan prompt"
+                          >
+                            <Brain size={11} className="text-white" />
+                          </a>
+                        )}
                       </div>
                     </div>
                     {/* Time badge */}
@@ -354,21 +581,44 @@ export default function DashboardPage() {
                 ))}
 
                 {/* Empty state */}
-                {filteredGallery.length === 0 && (
+                {displayedGallery.length === 0 && !searchLoading && (
                   <div className="col-span-full flex flex-col items-center justify-center py-16 gap-3 text-center">
                     <Sparkles
                       size={28}
                       className="text-[var(--accent)] opacity-30"
                     />
-                    <p className="text-sm text-[var(--text-muted)]">
-                      Belum ada gambar yang digenerate.
-                    </p>
-                    <a
-                      href="/generate"
-                      className="btn-shimmer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white mt-1"
-                    >
-                      <Plus size={13} /> Generate Sekarang
-                    </a>
+                    {isSearching ? (
+                      <>
+                        <p className="text-sm text-[var(--text-muted)]">
+                          No results for{" "}
+                          <span className="italic font-medium">
+                            &ldquo;{searchQuery.trim()}&rdquo;
+                          </span>
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] opacity-70">
+                          Try different keywords or check your spelling.
+                        </p>
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="btn-outline flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold mt-1"
+                        >
+                          <X size={12} />
+                          Clear Search
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-[var(--text-muted)]">
+                          Belum ada gambar yang digenerate.
+                        </p>
+                        <a
+                          href="/generate"
+                          className="btn-shimmer inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white mt-1"
+                        >
+                          <Plus size={13} /> Generate Sekarang
+                        </a>
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -388,18 +638,36 @@ export default function DashboardPage() {
             ) : (
               /* List view */
               <div className="flex flex-col gap-2">
-                {filteredGallery.length === 0 && (
+                {displayedGallery.length === 0 && !searchLoading && (
                   <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
                     <Sparkles
                       size={28}
                       className="text-[var(--accent)] opacity-30"
                     />
-                    <p className="text-sm text-[var(--text-muted)]">
-                      Belum ada gambar tersimpan.
-                    </p>
+                    {isSearching ? (
+                      <>
+                        <p className="text-sm text-[var(--text-muted)]">
+                          No results for{" "}
+                          <span className="italic font-medium">
+                            &ldquo;{searchQuery.trim()}&rdquo;
+                          </span>
+                        </p>
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="btn-outline flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold mt-1"
+                        >
+                          <X size={12} />
+                          Clear Search
+                        </button>
+                      </>
+                    ) : (
+                      <p className="text-sm text-[var(--text-muted)]">
+                        Belum ada gambar tersimpan.
+                      </p>
+                    )}
                   </div>
                 )}
-                {filteredGallery.map((item) => (
+                {displayedGallery.map((item) => (
                   <div
                     key={item.id}
                     className="group flex items-center gap-4 p-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--accent)]/25 transition-all duration-200"
@@ -431,22 +699,25 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       {item.image_url && (
-                        <a
-                          href={item.image_url}
-                          download={`design-${item.id}.png`}
+                        <button
+                          onClick={() => handleDownload(item.image_url!)}
                           className="w-7 h-7 rounded-lg border border-[var(--border)] hover:border-[var(--accent)]/40 flex items-center justify-center transition-colors"
+                          title="Download"
                         >
-                          <Download
-                            size={12}
-                            className="text-[var(--text-muted)]"
-                          />
-                        </a>
+                          <Download size={12} className="text-[var(--text-muted)]" />
+                        </button>
                       )}
-                      <button className="w-7 h-7 rounded-lg border border-[var(--border)] hover:border-red-500/40 hover:text-red-400 flex items-center justify-center transition-colors">
-                        <Trash2
-                          size={12}
-                          className="text-[var(--text-muted)]"
-                        />
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingId === item.id}
+                        className="w-7 h-7 rounded-lg border border-[var(--border)] hover:border-red-500/40 hover:text-red-400 flex items-center justify-center transition-colors disabled:opacity-50"
+                        title="Hapus"
+                      >
+                        {deletingId === item.id ? (
+                          <Loader2 size={12} className="text-[var(--text-muted)] animate-spin" />
+                        ) : (
+                          <Trash2 size={12} className="text-[var(--text-muted)]" />
+                        )}
                       </button>
                     </div>
                     <button className="text-[var(--text-dim)] hover:text-[var(--text-muted)] transition-colors ml-1">
@@ -539,6 +810,72 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Daily Limits */}
+            {(genLimit || recLimit) && (
+              <div className="feature-card rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Zap size={14} className="text-[var(--accent)]" />
+                  <h3 className="text-sm font-bold text-[var(--text-primary)]">Daily Limits</h3>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {/* Generate row */}
+                  {genLimit && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold text-[var(--text-muted)]">Image Generate</span>
+                        <span className={`text-xs font-bold tabular-nums ${genLimit.remaining === 0 ? "text-red-400" : "text-[var(--text-muted)]"}`}>
+                          {genLimit.used_today}/{genLimit.daily_limit}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(100, (genLimit.used_today / genLimit.daily_limit) * 100)}%`,
+                            background: genLimit.remaining === 0
+                              ? "linear-gradient(90deg,#ef4444,#f97316)"
+                              : "var(--accent)",
+                          }}
+                        />
+                      </div>
+                      {genLimit.remaining === 0 ? (
+                        <p className="text-[10px] text-red-400 mt-1">Limit reached · resets midnight UTC</p>
+                      ) : (
+                        <p className="text-[10px] text-[var(--text-muted)] mt-1">{genLimit.remaining} left today</p>
+                      )}
+                    </div>
+                  )}
+                  {/* Recommendation row */}
+                  {recLimit && (
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold text-[var(--text-muted)]">AI Recommend</span>
+                        <span className={`text-xs font-bold tabular-nums ${recLimit.remaining === 0 ? "text-red-400" : "text-[var(--text-muted)]"}`}>
+                          {recLimit.used_today}/{recLimit.daily_limit}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(100, (recLimit.used_today / recLimit.daily_limit) * 100)}%`,
+                            background: recLimit.remaining === 0
+                              ? "linear-gradient(90deg,#ef4444,#f97316)"
+                              : "var(--accent)",
+                          }}
+                        />
+                      </div>
+                      {recLimit.remaining === 0 ? (
+                        <p className="text-[10px] text-red-400 mt-1">Limit reached · resets midnight UTC</p>
+                      ) : (
+                        <p className="text-[10px] text-[var(--text-muted)] mt-1">{recLimit.remaining} left today</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Quick Generate */}
             <div className="relative rounded-2xl border border-[var(--accent)]/20 bg-[var(--accent)]/5 p-5 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/8 to-transparent pointer-events-none" />
@@ -564,6 +901,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </main>
   );
 }

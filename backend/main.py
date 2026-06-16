@@ -8,7 +8,7 @@ from core.config import settings
 from core.redis import get_redis, close_redis
 from database.session import engine, AsyncSessionLocal
 from database.base import Base
-from routes import generate, recommendation, dashboard
+from routes import generate, recommendation, dashboard, search, analytics, credits, evolve, ratings, bi, deep_learning, vsm_search, limits
 
 # Import semua model agar Base.metadata mengetahui tabel yang ada
 import models  # noqa: F401
@@ -90,6 +90,15 @@ app.add_middleware(
 app.include_router(generate.router, prefix="/api/generate", tags=["Generate"])
 app.include_router(recommendation.router, prefix="/api/recommendation", tags=["Recommendation"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
+app.include_router(search.router, prefix="/api/search", tags=["Search"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
+app.include_router(credits.router, prefix="/api/credits", tags=["Credits"])
+app.include_router(evolve.router, prefix="/api/evolve", tags=["Evolve"])
+app.include_router(ratings.router, prefix="/api/ratings", tags=["Ratings"])
+app.include_router(bi.router, prefix="/api/bi", tags=["Business Intelligence"])
+app.include_router(deep_learning.router, prefix="/api/dl", tags=["Deep Learning"])
+app.include_router(vsm_search.router, prefix="/api/vsm-search", tags=["Vector Space Model"])
+app.include_router(limits.router, prefix="/api/limits", tags=["Limits"])
 
 
 @app.get("/", tags=["Health"])

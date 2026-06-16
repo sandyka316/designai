@@ -6,6 +6,10 @@ import ThemeWrapper from "@/components/ThemeWrapper";
 export const metadata: Metadata = {
   title: "DesignAI",
   description: "AI-powered design tools",
+  icons: {
+    icon: "/icon.png",          // favicon biasa
+    apple: "/apple-icon.png",   // untuk iOS (opsional)
+  },
 };
 
 export default function RootLayout({

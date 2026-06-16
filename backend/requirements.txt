@@ -28,3 +28,18 @@ python-jose[cryptography]==3.3.0
 
 # Background tasks / job queue
 arq==0.26.1
+
+# Object Storage — Cloudflare R2 (S3-compatible)
+boto3==1.35.36
+
+# Data Mining
+scikit-learn==1.5.2
+mlxtend==0.23.1
+pandas==2.2.3
+numpy==1.26.4
+
+# Deep Learning — CLIP + LSTM
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.35.0
+pillow>=10.0.0

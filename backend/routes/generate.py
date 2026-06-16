@@ -1,11 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.session import get_db
 from models.generation import GenerationHistory
-from schemas.generate import GenerateRequest, GenerateResponse
+from schemas.generate import GenerateResponse
 from services.generate_service import generate_image_from_prompt
 
 router = APIRouter()
@@ -13,17 +14,27 @@ router = APIRouter()
 # Guest user UUID — dipakai sementara sebelum auth diimplementasi
 _GUEST_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
 
+ALLOWED_MIME_TYPES = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+MAX_FILE_SIZE_MB = 10
+
 
 @router.post("", response_model=GenerateResponse)
 async def generate_image(
-    body: GenerateRequest,
+    prompt: str = Form(..., min_length=3, max_length=1000),
+    model: str = Form(default="hd"),
+    reference_image: UploadFile | None = File(default=None),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Generate gambar dari text prompt.
+    Generate gambar dari text prompt, dengan opsional gambar referensi.
 
-    **Alur:**
+    **Alur tanpa gambar:**
     1. Gemini memperkaya prompt (enhance)
+    2. NanoBanana FLUX men-generate gambar
+    3. Hasil disimpan ke database
+
+    **Alur dengan gambar referensi:**
+    1. Gemini Vision menganalisis gambar referensi + menggabungkan dengan prompt
     2. NanoBanana FLUX men-generate gambar
     3. Hasil disimpan ke database
 
@@ -32,15 +43,44 @@ async def generate_image(
     - `genius` — Pro only
     - `super-genius` — Enterprise only
     """
-    from fastapi import HTTPException
-
-    if body.model in ("genius", "super-genius"):
+    if model in ("genius", "super-genius"):
         raise HTTPException(
             status_code=403,
             detail="Model ini hanya tersedia untuk pengguna Pro / Enterprise.",
         )
 
-    result = await generate_image_from_prompt(body.prompt, body.model)
+    # ── Baca gambar referensi jika ada ───────────────────────────────────────
+    image_bytes = None
+    image_mime = None
+
+    if reference_image and reference_image.filename:
+        # Validasi tipe file
+        content_type = reference_image.content_type or ""
+        if content_type not in ALLOWED_MIME_TYPES:
+            raise HTTPException(
+                status_code=415,
+                detail=f"Tipe file tidak didukung: {content_type}. Gunakan PNG, JPG, atau WEBP.",
+            )
+
+        image_bytes = await reference_image.read()
+
+        # Validasi ukuran file
+        size_mb = len(image_bytes) / (1024 * 1024)
+        if size_mb > MAX_FILE_SIZE_MB:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File terlalu besar ({size_mb:.1f}MB). Maksimum {MAX_FILE_SIZE_MB}MB.",
+            )
+
+        image_mime = content_type
+
+    # ── Generate ──────────────────────────────────────────────────────────────
+    result = await generate_image_from_prompt(
+        prompt=prompt,
+        model_id=model,
+        image_bytes=image_bytes,
+        image_mime=image_mime,
+    )
 
     # ── Simpan ke database ────────────────────────────────────────────────────
     record = GenerationHistory(

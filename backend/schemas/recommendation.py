@@ -1,5 +1,13 @@
 from pydantic import BaseModel, Field
-from typing import Annotated
+
+
+class ProductResult(BaseModel):
+    id: str = Field(description="Identifier produk: totebag | sneakers | tshirt")
+    label: str = Field(description="Nama produk yang ditampilkan")
+    emoji: str = Field(description="Emoji representasi produk")
+    prompt: str = Field(description="Prompt AI spesifik untuk produk ini")
+    image_url: str | None = Field(default=None, description="URL gambar hasil generate di R2")
+    success: bool = Field(default=False, description="Apakah generate image berhasil")
 
 
 class RecommendationResponse(BaseModel):
@@ -8,7 +16,8 @@ class RecommendationResponse(BaseModel):
     style: str = Field(description="Gaya/style yang terdeteksi dari gambar")
     key_elements: str = Field(description="Elemen utama yang terdeteksi di gambar")
     mood: str = Field(description="Mood/suasana gambar")
-    recommended_use: str = Field(description="Rekomendasi penggunaan produk yang cocok")
     keywords: list[str] = Field(description="Kata kunci yang diekstrak dari gambar")
-    generated_prompt: str = Field(description="Prompt AI siap pakai berdasarkan analisis gambar")
+    products: list[ProductResult] = Field(
+        description="3 produk (totebag, sneakers, tshirt) dengan gambar hasil generate"
+    )
     message: str = "OK"

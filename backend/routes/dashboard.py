@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.session import get_db
@@ -161,3 +161,34 @@ async def get_dashboard(db: AsyncSession = Depends(get_db)):
         credits_used=credits_used,
         credits_total=credits_total,
     )
+
+
+@router.delete("/generation/{generation_id}")
+async def delete_generation(
+    generation_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Hapus satu record GenerationHistory berdasarkan ID.
+    Hanya bisa hapus milik guest user saat ini.
+    """
+    try:
+        gen_uuid = uuid.UUID(generation_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID tidak valid.")
+
+    # Cari record
+    stmt = select(GenerationHistory).where(
+        GenerationHistory.id == gen_uuid,
+        GenerationHistory.user_id == _GUEST_USER_ID,
+    )
+    result = await db.execute(stmt)
+    record = result.scalar_one_or_none()
+
+    if not record:
+        raise HTTPException(status_code=404, detail="Gambar tidak ditemukan.")
+
+    await db.delete(record)
+    await db.commit()
+
+    return {"success": True, "message": "Gambar berhasil dihapus."}

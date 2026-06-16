@@ -12,15 +12,14 @@ import {
   Wand2,
   LogOut,
   User,
+  Brain,
+  BarChart2,
+  TrendingUp,
+  Cpu,
+  Search,
 } from "lucide-react";
 
 const NAV_MENU = [
-  {
-    href: "/generate",
-    icon: ImageIcon,
-    label: "Image Generator",
-    desc: "Generate images from text",
-  },
   {
     href: "/dashboard",
     icon: LayoutDashboard,
@@ -28,10 +27,46 @@ const NAV_MENU = [
     desc: "Your stats & gallery",
   },
   {
+    href: "/generate",
+    icon: ImageIcon,
+    label: "Image Generator",
+    desc: "Generate images from text",
+  },
+  {
     href: "/recommendation",
     icon: Wand2,
     label: "Recommendations",
     desc: "AI product suggestions",
+  },
+  {
+    href: "/analytics",
+    icon: BarChart2, // atau PieChart / LineChart
+    label: "Analytics",
+    desc: "Usage stats & generation insights",
+  },
+  {
+    href: "/smart-prompt",
+    icon: Brain,
+    label: "Smart Prompt",
+    desc: "Fuzzy, Genetic & Neural AI",
+  },
+  {
+    href: "/admin/bi",
+    icon: TrendingUp,
+    label: "BI Dashboard",
+    desc: "Business Intelligence & Export",
+  },
+  {
+    href: "/deep-learning",
+    icon: Cpu,
+    label: "Deep Learning",
+    desc: "CLIP Scorer & LSTM Suggestions",
+  },
+  {
+    href: "/semantic-search",
+    icon: Search,
+    label: "Semantic Search",
+    desc: "VSM-based design retrieval",
   },
 ];
 
@@ -39,7 +74,9 @@ interface NavbarProps {
   hideCenterNav?: boolean;
 }
 
-export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Element {
+export default function Navbar({
+  hideCenterNav = false,
+}: NavbarProps): JSX.Element {
   const { data: session, status } = useSession();
   const isLoading = status === "loading";
 
@@ -53,7 +90,10 @@ export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Elem
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
         setUserMenuOpen(false);
       }
     };
@@ -80,7 +120,6 @@ export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Elem
 
         {/* Right side */}
         <div className="flex items-center gap-3">
-
           {/* ── SKELETON LOADING ── */}
           {isLoading && (
             <div className="flex items-center gap-3">
@@ -123,10 +162,14 @@ export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Elem
                   `}
                 >
                   <div className="relative w-5 h-5 flex items-center justify-center">
-                    <span className={`absolute transition-all duration-200 ${menuOpen ? "opacity-100 rotate-0" : "opacity-0 rotate-90"}`}>
+                    <span
+                      className={`absolute transition-all duration-200 ${menuOpen ? "opacity-100 rotate-0" : "opacity-0 rotate-90"}`}
+                    >
                       <X size={16} />
                     </span>
-                    <span className={`absolute transition-all duration-200 ${menuOpen ? "opacity-0 -rotate-90" : "opacity-100 rotate-0"}`}>
+                    <span
+                      className={`absolute transition-all duration-200 ${menuOpen ? "opacity-0 -rotate-90" : "opacity-100 rotate-0"}`}
+                    >
                       <Menu size={16} />
                     </span>
                   </div>
@@ -136,7 +179,10 @@ export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Elem
                 {menuOpen && (
                   <div
                     className="absolute top-full right-0 mt-3 w-64 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden z-50"
-                    style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,109,250,0.08)" }}
+                    style={{
+                      boxShadow:
+                        "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,109,250,0.08)",
+                    }}
                   >
                     <div className="px-4 py-3 border-b border-[var(--border)]">
                       <span className="text-[10px] font-semibold text-[var(--text-muted)] tracking-widest uppercase">
@@ -152,11 +198,18 @@ export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Elem
                         className="flex items-center gap-3 px-4 py-3.5 hover:bg-[var(--accent)]/8 transition-colors duration-150 group"
                       >
                         <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/15 flex items-center justify-center shrink-0 group-hover:bg-[var(--accent)]/20 transition-colors">
-                          <item.icon size={14} className="text-[var(--accent)]" />
+                          <item.icon
+                            size={14}
+                            className="text-[var(--accent)]"
+                          />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-[var(--text-primary)]">{item.label}</span>
-                          <span className="text-xs text-[var(--text-muted)]">{item.desc}</span>
+                          <span className="text-sm font-semibold text-[var(--text-primary)]">
+                            {item.label}
+                          </span>
+                          <span className="text-xs text-[var(--text-muted)]">
+                            {item.desc}
+                          </span>
                         </div>
                       </a>
                     ))}
@@ -214,7 +267,13 @@ export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Elem
                   fill="none"
                   className={`text-[var(--text-muted)] transition-transform duration-200 ${userMenuOpen ? "rotate-180" : ""}`}
                 >
-                  <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path
+                    d="M2 3.5l3 3 3-3"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </button>
 
@@ -222,7 +281,10 @@ export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Elem
               {userMenuOpen && (
                 <div
                   className="absolute top-full right-0 mt-3 w-64 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden z-50"
-                  style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,109,250,0.08)" }}
+                  style={{
+                    boxShadow:
+                      "0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,109,250,0.08)",
+                  }}
                 >
                   {/* ── Profile info ── */}
                   <div className="px-4 py-4 border-b border-[var(--border)]">
@@ -259,11 +321,18 @@ export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Elem
                         className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--accent)]/8 transition-colors duration-150 group"
                       >
                         <div className="w-8 h-8 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/15 flex items-center justify-center shrink-0 group-hover:bg-[var(--accent)]/20 transition-colors">
-                          <item.icon size={14} className="text-[var(--accent)]" />
+                          <item.icon
+                            size={14}
+                            className="text-[var(--accent)]"
+                          />
                         </div>
                         <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-[var(--text-primary)]">{item.label}</span>
-                          <span className="text-xs text-[var(--text-muted)]">{item.desc}</span>
+                          <span className="text-sm font-semibold text-[var(--text-primary)]">
+                            {item.label}
+                          </span>
+                          <span className="text-xs text-[var(--text-muted)]">
+                            {item.desc}
+                          </span>
                         </div>
                       </a>
                     ))}
@@ -290,7 +359,6 @@ export default function Navbar({ hideCenterNav = false }: NavbarProps): JSX.Elem
               )}
             </div>
           )}
-
         </div>
       </div>
     </nav>
