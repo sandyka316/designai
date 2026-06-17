@@ -233,19 +233,19 @@ export default function AnalyticsPage() {
               </h2>
               <p className="text-sm text-[var(--text-muted)] mt-1">
                 AI groups your generations automatically based on prompt semantics and text similarities (TF-IDF).
-                Found <strong className="text-[var(--text-primary)]">{clusters.clusters.length} clusters</strong> from {clusters.total_items} designs.
+                Found <strong className="text-[var(--text-primary)]">{clusters.clusters?.length ?? 0} clusters</strong> from {clusters.total_items} designs.
               </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {clusters.clusters.length === 0 ? (
+              {(clusters.clusters?.length ?? 0) === 0 ? (
                 <div className="col-span-full feature-card p-10 text-center rounded-2xl flex flex-col items-center">
                   <Layers size={32} className="text-[var(--text-muted)] mb-3" />
                   <p className="text-[var(--text-primary)] font-medium">Not enough data</p>
                   <p className="text-sm text-[var(--text-muted)]">Need at least 4 generations to perform clustering.</p>
                 </div>
               ) : (
-                clusters.clusters.map((cluster) => (
+                (clusters.clusters ?? []).map((cluster) => (
                   <div key={cluster.id} className="feature-card rounded-2xl p-5 border-t-4" style={{ borderTopColor: cluster.color.bg }}>
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import AuthProvider from "@/components/AuthProvider";
 import ThemeWrapper from "@/components/ThemeWrapper";
@@ -26,7 +27,11 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
-        <script
+      </head>
+      <body className="grain antialiased" suppressHydrationWarning>
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
@@ -44,8 +49,6 @@ export default function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className="grain antialiased" suppressHydrationWarning>
         <AuthProvider>
           <ThemeWrapper>{children}</ThemeWrapper>
         </AuthProvider>

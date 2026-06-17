@@ -18,11 +18,13 @@ import {
   ChevronRight,
   Lightbulb,
   Zap,
+  AlertCircle,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GuestLimitModal from "@/components/GuestLimitModal";
-import { hasGuestLimitReached, incrementGuestCount } from "@/lib/guestLimit";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 // ─── TYPES ─────────────────────────────────────────────────────
 interface ProductResult {
@@ -35,6 +37,16 @@ interface ProductResult {
 }
 
 interface AnalysisResult {
+  dominantColors: string[];
+  style: string;
+  keyElements: string;
+  mood: string;
+  keywords: string[];
+  generatedPrompt: string;
+  products: ProductResult[];
+}
+
+interface ManualResult {
   dominantColors: string[];
   style: string;
   keyElements: string;
@@ -262,6 +274,8 @@ function SpotlightCard({
 }
 
 export default function RecommendationsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -271,14 +285,33 @@ export default function RecommendationsPage() {
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [showLimitModal, setShowLimitModal] = useState(false);
   const [recLimit, setRecLimit] = useState<{ used_today: number; daily_limit: number; remaining: number } | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Dual mode state ───────────────────────────────────────────────────────
+  const [mode, setMode] = useState<"auto" | "manual">("auto");
+  const [manualPrompt, setManualPrompt] = useState("");
+  const [isManualAnalyzing, setIsManualAnalyzing] = useState(false);
+  const [manualResult, setManualResult] = useState<ManualResult | null>(null);
+  const [manualError, setManualError] = useState<string | null>(null);
+
+  // ── Auth guard ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login?redirect=/recommendation");
+    }
+  }, [status, router]);
+
+  const token = (session as any)?.accessToken as string | undefined;
 
   // ── Fetch daily limit status on mount ────────────────────────────────
   const fetchRecLimit = async () => {
+    if (!token) return;
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/limits/status/recommendation");
+      const res = await fetch("http://127.0.0.1:8000/api/limits/status/recommendation", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (res.ok) setRecLimit(await res.json());
     } catch {
       // silent fail
@@ -286,8 +319,8 @@ export default function RecommendationsPage() {
   };
 
   useEffect(() => {
-    fetchRecLimit();
-  }, []);
+    if (token) fetchRecLimit();
+  }, [token]);
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("image/")) return;
@@ -309,8 +342,8 @@ export default function RecommendationsPage() {
 
   const handleAnalyze = async () => {
     if (!uploadedFile) return;
-    if (hasGuestLimitReached()) {
-      setShowLimitModal(true);
+    if (!token) {
+      router.replace("/login?redirect=/recommendation");
       return;
     }
 
@@ -318,6 +351,7 @@ export default function RecommendationsPage() {
     try {
       const limitRes = await fetch("http://127.0.0.1:8000/api/limits/check/recommendation", {
         method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (limitRes.status === 429) {
         const limitErr = await limitRes.json();
@@ -338,6 +372,7 @@ export default function RecommendationsPage() {
 
       const res = await fetch("http://localhost:8000/api/recommendation", {
         method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
@@ -362,7 +397,6 @@ export default function RecommendationsPage() {
           data.products?.find((p: ProductResult) => p.success)?.prompt ?? "",
         products: data.products ?? [],
       });
-      incrementGuestCount();
       fetchRecLimit();
     } catch (e) {
       console.error("Network error:", e);
@@ -384,6 +418,67 @@ export default function RecommendationsPage() {
     setUploadedFile(null);
     setAnalysisResult(null);
     setErrorMessage(null);
+  };
+
+  // ── Manual Mode: gambar + arahan user → AI pilih produk ─────────────────
+  const handleManualAnalyze = async () => {
+    if (!uploadedFile || !manualPrompt.trim()) return;
+    if (!token) {
+      router.replace("/login?redirect=/recommendation");
+      return;
+    }
+
+    // Daily limit check
+    try {
+      const limitRes = await fetch("http://127.0.0.1:8000/api/limits/check/recommendation", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (limitRes.status === 429) {
+        const limitErr = await limitRes.json();
+        setManualError(limitErr.detail ?? "Daily limit reached. Try again tomorrow.");
+        return;
+      }
+    } catch { /* silent */ }
+
+    setIsManualAnalyzing(true);
+    setManualResult(null);
+    setManualError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadedFile);
+      formData.append("prompt", manualPrompt.trim());
+
+      const res = await fetch("http://127.0.0.1:8000/api/recommendation/manual", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        setManualError(err.detail ?? "Terjadi kesalahan. Silakan coba lagi.");
+        return;
+      }
+
+      const data = await res.json();
+      setManualResult({
+        dominantColors: data.dominant_colors ?? [],
+        style: data.style ?? "",
+        keyElements: data.key_elements ?? "",
+        mood: data.mood ?? "",
+        keywords: data.keywords ?? [],
+        generatedPrompt:
+          data.products?.find((p: ProductResult) => p.success)?.prompt ?? "",
+        products: data.products ?? [],
+      });
+      fetchRecLimit();
+    } catch (e) {
+      setManualError("Gagal terhubung ke server. Pastikan backend berjalan.");
+    } finally {
+      setIsManualAnalyzing(false);
+    }
   };
 
   return (
@@ -452,18 +547,134 @@ export default function RecommendationsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2">
             {/* ── LEFT PANEL: Input ── */}
             <div className="p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-[var(--border)]">
-              {/* INPUT label */}
-              <div className="flex items-center gap-2 mb-6">
-                <ImageIcon size={14} className="text-[var(--accent)]" />
-                <span className="text-xs font-bold text-[var(--accent)] tracking-widest uppercase">
-                  Input
-                </span>
-                <span className="text-xs text-[var(--text-muted)] font-medium">
-                  — Reference Image
-                </span>
+
+              {/* ── MODE TOGGLE ────────────────────────────────────── */}
+              <div
+                className="flex items-center gap-1 p-1 rounded-xl mb-7"
+                style={{
+                  background: "rgba(124,109,250,0.06)",
+                  border: "1px solid rgba(124,109,250,0.15)",
+                }}
+              >
+                <button
+                  id="btn-mode-auto"
+                  onClick={() => { setMode("auto"); setManualResult(null); setManualError(null); }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold tracking-wide transition-all duration-200"
+                  style={mode === "auto" ? {
+                    background: "linear-gradient(135deg, rgba(124,109,250,0.25), rgba(45,212,191,0.12))",
+                    color: "var(--accent)",
+                    border: "1px solid rgba(124,109,250,0.3)",
+                    boxShadow: "0 2px 8px rgba(124,109,250,0.15)",
+                  } : {
+                    color: "var(--text-muted)",
+                    border: "1px solid transparent",
+                  }}
+                >
+                  <ImageIcon size={13} />
+                  Auto Mode
+                </button>
+                <button
+                  id="btn-mode-manual"
+                  onClick={() => { setMode("manual"); setAnalysisResult(null); setManualResult(null); setManualError(null); setErrorMessage(null); }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold tracking-wide transition-all duration-200"
+                  style={mode === "manual" ? {
+                    background: "linear-gradient(135deg, rgba(45,212,191,0.2), rgba(124,109,250,0.12))",
+                    color: "var(--accent-teal, #2dd4bf)",
+                    border: "1px solid rgba(45,212,191,0.3)",
+                    boxShadow: "0 2px 8px rgba(45,212,191,0.12)",
+                  } : {
+                    color: "var(--text-muted)",
+                    border: "1px solid transparent",
+                  }}
+                >
+                  <Wand2 size={13} />
+                  Manual Mode
+                </button>
               </div>
 
-              {/* Upload area */}
+              <div className="flex items-center gap-2 mb-6">
+                {mode === "auto" ? (
+                  <>
+                    <ImageIcon size={14} className="text-[var(--accent)]" />
+                    <span className="text-xs font-bold text-[var(--accent)] tracking-widest uppercase">Input</span>
+                    <span className="text-xs text-[var(--text-muted)] font-medium">— Reference Image</span>
+                  </>
+                ) : (
+                  <>
+                    <Wand2 size={14} className="text-[var(--accent)]" />
+                    <span className="text-xs font-bold text-[var(--accent)] tracking-widest uppercase">Input</span>
+                    <span className="text-xs text-[var(--text-muted)] font-medium">— Image + Direction</span>
+                  </>
+                )}
+              </div>
+
+              {/* ── MANUAL MODE: prompt textarea (appears below image upload) ── */}
+              {mode === "manual" && (
+                <div className="mb-5">
+                  <label className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2 block">
+                    🎯 Arahan / Direction
+                  </label>
+                  <textarea
+                    id="manual-prompt-input"
+                    value={manualPrompt}
+                    onChange={(e) => setManualPrompt(e.target.value)}
+                    placeholder="Contoh: buat versi streetwear modern, jadikan gothic dark, ubah jadi batik premium..."
+                    rows={4}
+                    className="w-full rounded-2xl p-4 text-sm resize-none outline-none transition-all duration-200"
+                    style={{
+                      background: "rgba(124,109,250,0.04)",
+                      border: "1.5px solid rgba(124,109,250,0.2)",
+                      color: "var(--text-primary)",
+                      lineHeight: "1.6",
+                    }}
+                    onFocus={(e) => { e.target.style.borderColor = "rgba(124,109,250,0.5)"; e.target.style.boxShadow = "0 0 0 3px rgba(124,109,250,0.08)"; }}
+                    onBlur={(e) => { e.target.style.borderColor = "rgba(124,109,250,0.2)"; e.target.style.boxShadow = "none"; }}
+                    onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleManualAnalyze(); }}
+                  />
+                  <p className="text-xs text-[var(--text-muted)] mt-2">
+                    Gambar memberi visual, arahan memberi arah produk. AI menggabungkan keduanya ✨
+                  </p>
+
+                  <button
+                    id="btn-manual-analyze"
+                    onClick={handleManualAnalyze}
+                    disabled={isManualAnalyzing || !uploadedFile || !manualPrompt.trim()}
+                    className="w-full mt-4 relative flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-bold text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
+                    style={{
+                      background: isManualAnalyzing
+                        ? "rgba(124,109,250,0.3)"
+                        : "linear-gradient(135deg, #7c6dfa, #2dd4bf)",
+                      color: "white",
+                      boxShadow: isManualAnalyzing ? "none" : "0 4px 20px rgba(124,109,250,0.35)",
+                    }}
+                  >
+                    {isManualAnalyzing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        AI Analyzing with Direction...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 size={15} />
+                        {!uploadedFile ? "Upload image first" : "Analyze with Direction"}
+                      </>
+                    )}
+                  </button>
+
+                  {/* Manual error */}
+                  {manualError && (
+                    <div
+                      className="mt-4 p-3 rounded-xl text-xs flex items-start gap-2"
+                      style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", color: "#f87171" }}
+                    >
+                      <AlertCircle size={13} className="shrink-0 mt-0.5" />
+                      <span>{manualError}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Upload area — both Auto and Manual mode */}
               {!uploadedImage ? (
                 <div
                   onDragOver={(e) => {
@@ -521,16 +732,16 @@ export default function RecommendationsPage() {
                   >
                     <X size={14} className="text-white" />
                   </button>
-                </div>
+                  </div>
               )}
 
-              {/* Image Analysis Result */}
-              {analysisResult && (
+              {/* Image Analysis Result — shown for both auto (analysisResult) and manual (manualResult) */}
+              {(analysisResult ?? manualResult) && (
                 <div className="mb-6">
                   <div className="flex items-center gap-2 mb-4">
                     <Sparkles size={13} className="text-[var(--accent)]" />
                     <span className="text-xs font-bold text-[var(--accent)] tracking-widest uppercase">
-                      Image Analysis
+                      {mode === "manual" ? "AI Direction Analysis" : "Image Analysis"}
                     </span>
                   </div>
                   <div className="flex flex-col gap-3">
@@ -540,7 +751,7 @@ export default function RecommendationsPage() {
                         Dominant Colors
                       </span>
                       <div className="flex items-center gap-1.5">
-                        {analysisResult.dominantColors.map((color, i) => (
+                        {(analysisResult?.dominantColors ?? manualResult?.dominantColors ?? []).map((color, i) => (
                           <div
                             key={i}
                             className="w-5 h-5 rounded-full border border-white/10 shrink-0"
@@ -550,12 +761,9 @@ export default function RecommendationsPage() {
                       </div>
                     </div>
                     {[
-                      { label: "Style", value: analysisResult.style },
-                      {
-                        label: "Key Elements",
-                        value: analysisResult.keyElements,
-                      },
-                      { label: "Mood", value: analysisResult.mood },
+                      { label: "Style", value: analysisResult?.style ?? manualResult?.style },
+                      { label: "Key Elements", value: analysisResult?.keyElements ?? manualResult?.keyElements },
+                      { label: "Mood", value: analysisResult?.mood ?? manualResult?.mood },
                     ].map((item) => (
                       <div key={item.label} className="flex items-start gap-3">
                         <span className="text-xs font-semibold text-[var(--text-muted)] w-32 shrink-0">
@@ -571,7 +779,7 @@ export default function RecommendationsPage() {
               )}
 
               {/* Extracted Keywords */}
-              {analysisResult && (
+              {(analysisResult ?? manualResult) && (
                 <div className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
                     <Tag size={13} className="text-[var(--accent)]" />
@@ -580,7 +788,7 @@ export default function RecommendationsPage() {
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {analysisResult.keywords.map((kw) => (
+                    {(analysisResult?.keywords ?? manualResult?.keywords ?? []).map((kw) => (
                       <span
                         key={kw}
                         className="tag-pill text-xs font-medium px-3 py-1 rounded-full"
@@ -592,8 +800,8 @@ export default function RecommendationsPage() {
                 </div>
               )}
 
-              {/* Analyze button */}
-              {uploadedImage && !analysisResult && (
+              {/* Analyze button — Auto mode only */}
+              {mode === "auto" && uploadedImage && !analysisResult && (
                 <>
                   <button
                     onClick={handleAnalyze}
@@ -685,7 +893,7 @@ export default function RecommendationsPage() {
                 </span>
               </div>
 
-              {!analysisResult ? (
+              {!(analysisResult || manualResult) ? (
                 /* Empty state */
                 <div className="relative flex flex-col items-center justify-center min-h-[400px] text-center">
                   <div className="absolute inset-0 grid-bg opacity-40 rounded-2xl" />
@@ -704,16 +912,18 @@ export default function RecommendationsPage() {
                         Product recommendations will appear here
                       </p>
                       <p className="text-xs text-[var(--text-dim)]">
-                        Upload an image and click Analyze
+                        {mode === "auto"
+                          ? "Upload an image and click Analyze"
+                          : "Upload an image, type your direction, then click Analyze with Direction"}
                       </p>
                     </div>
                   </div>
                 </div>
               ) : (
                 <>
-                  {/* Product grid — 3 produk dari backend */}
+                  {/* Product grid — 3 produk dari AI (dinamis) */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-                    {analysisResult.products.map((product, i) => (
+                    {(analysisResult?.products ?? manualResult?.products ?? []).map((product, i) => (
                       <div
                         key={product.id}
                         className="group feature-card rounded-2xl overflow-hidden cursor-pointer"
@@ -775,10 +985,10 @@ export default function RecommendationsPage() {
                         </button>
                       </div>
                       <p className="text-sm text-[var(--text-primary)] leading-relaxed italic mb-4">
-                        {analysisResult.generatedPrompt}
+                        {analysisResult?.generatedPrompt ?? manualResult?.generatedPrompt}
                       </p>
                       <a
-                        href={`/generate?q=${encodeURIComponent(analysisResult.generatedPrompt)}`}
+                        href={`/generate?q=${encodeURIComponent(analysisResult?.generatedPrompt ?? manualResult?.generatedPrompt ?? "")}`}
                         className="btn-shimmer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white"
                       >
                         <Sparkles size={12} />
@@ -790,8 +1000,8 @@ export default function RecommendationsPage() {
                 </>
               )}
 
-              {/* Loading state */}
-              {isAnalyzing && (
+              {/* Loading overlay — Auto and Manual mode */}
+              {(isAnalyzing || isManualAnalyzing) && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 bg-[var(--bg-card)]/80 backdrop-blur-sm rounded-r-3xl z-20">
                   <div className="w-16 h-16 rounded-2xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 flex items-center justify-center">
                     <Sparkles
@@ -801,10 +1011,10 @@ export default function RecommendationsPage() {
                   </div>
                   <div className="flex flex-col items-center gap-2 text-center">
                     <p className="text-sm font-semibold text-[var(--text-primary)]">
-                      Analyzing your image...
+                      {isManualAnalyzing ? "Analyzing with your direction..." : "Analyzing your image..."}
                     </p>
                     <p className="text-xs text-[var(--text-muted)]">
-                      Extracting colors, style & mood
+                      {isManualAnalyzing ? "Combining image + arahan, choosing 3 products" : "Extracting colors, style & mood"}
                     </p>
                   </div>
                   <div className="w-48 h-1 rounded-full bg-[var(--border)] overflow-hidden">

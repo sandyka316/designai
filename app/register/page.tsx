@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import {
   Sparkles,
@@ -11,8 +11,12 @@ import {
   EyeOff,
   ArrowRight,
   AlertCircle,
+  User,
+  CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 // ─── Google Icon ───────────────────────────────────────────────
 function GoogleIcon() {
@@ -26,11 +30,18 @@ function GoogleIcon() {
   );
 }
 
-function LoginForm() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const redirect = searchParams.get("redirect") ?? "/dashboard";
+const PERKS = [
+  "5x generate per hari",
+  "2x AI recommendation per hari",
+  "Dashboard & analytics pribadi",
+  "Simpan riwayat desain",
+];
 
+export default function RegisterPage() {
+  const router = useRouter();
+
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -38,31 +49,55 @@ function LoginForm() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Email + Password login ────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
 
-    const result = await signIn("credentials", {
-      redirect: false,
-      email: email.trim(),
-      password,
-    });
-
-    if (result?.error) {
-      setError("Email atau password salah. Silakan coba lagi.");
-      setLoading(false);
+    if (password.length < 6) {
+      setError("Password minimal 6 karakter.");
       return;
     }
 
-    router.push(redirect);
+    setLoading(true);
+
+    try {
+      // 1. Daftar ke backend
+      const res = await fetch(`${BACKEND_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, username, email, password }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        setError(err.detail ?? "Registrasi gagal. Coba lagi.");
+        setLoading(false);
+        return;
+      }
+
+      // 2. Auto-login setelah berhasil daftar
+      const result = await signIn("credentials", {
+        redirect: false,
+        email: email.trim(),
+        password,
+      });
+
+      if (result?.error) {
+        // Daftar berhasil tapi login gagal — arahkan ke login manual
+        router.push("/login?registered=1");
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch {
+      setError("Terjadi kesalahan. Periksa koneksi dan coba lagi.");
+      setLoading(false);
+    }
   };
 
-  // ── Google login ──────────────────────────────────────────────
-  const handleGoogleLogin = async () => {
+  const handleGoogleRegister = async () => {
     setGoogleLoading(true);
-    await signIn("google", { callbackUrl: redirect });
+    await signIn("google", { callbackUrl: "/dashboard" });
   };
 
   return (
@@ -70,8 +105,8 @@ function LoginForm() {
       {/* Background orbs */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full blur-[140px] pointer-events-none opacity-20"
         style={{ background: "radial-gradient(ellipse, rgba(124,109,250,0.8), transparent 70%)" }} />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[300px] rounded-full blur-[120px] pointer-events-none opacity-15"
-        style={{ background: "radial-gradient(ellipse, rgba(45,212,191,0.6), transparent 70%)" }} />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[300px] rounded-full blur-[120px] pointer-events-none opacity-15"
+        style={{ background: "radial-gradient(ellipse, rgba(16,185,129,0.6), transparent 70%)" }} />
 
       <div className="relative w-full max-w-md">
         {/* Logo */}
@@ -87,22 +122,31 @@ function LoginForm() {
         {/* Card */}
         <div className="rounded-3xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden"
           style={{ boxShadow: "0 0 0 1px rgba(124,109,250,0.1), 0 24px 80px rgba(0,0,0,0.4)" }}>
-          {/* Top accent line */}
           <div className="h-px bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent" />
 
           <div className="p-8">
-            <div className="text-center mb-8">
+            <div className="text-center mb-6">
               <h1 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight mb-2">
-                Welcome back
+                Create your account
               </h1>
               <p className="text-sm text-[var(--text-muted)]">
-                Log in to continue generating amazing designs
+                Gratis selamanya — mulai generate sekarang
               </p>
             </div>
 
-            {/* Google login button */}
+            {/* Perks */}
+            <div className="grid grid-cols-2 gap-2 mb-6 p-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border)]">
+              {PERKS.map((perk, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <CheckCircle2 size={13} className="text-[var(--accent)] shrink-0" />
+                  <span className="text-xs text-[var(--text-muted)]">{perk}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Google button */}
             <button
-              onClick={handleGoogleLogin}
+              onClick={handleGoogleRegister}
               disabled={googleLoading || loading}
               className="w-full flex items-center justify-center gap-3 py-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-primary)] hover:border-[var(--accent)]/40 transition-all disabled:opacity-60 disabled:cursor-not-allowed mb-5"
             >
@@ -111,7 +155,7 @@ function LoginForm() {
               ) : (
                 <GoogleIcon />
               )}
-              {googleLoading ? "Redirecting..." : "Continue with Google"}
+              {googleLoading ? "Redirecting..." : "Sign up with Google"}
             </button>
 
             {/* Divider */}
@@ -122,6 +166,42 @@ function LoginForm() {
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {/* Name */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <User size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" />
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your full name"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)]/60 focus:bg-[var(--bg-primary)] transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Username */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  Username
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-dim)] text-sm font-medium">@</span>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                    placeholder="your_username"
+                    className="w-full pl-8 pr-4 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)]/60 focus:bg-[var(--bg-primary)] transition-all"
+                    required
+                    minLength={3}
+                  />
+                </div>
+              </div>
+
               {/* Email */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
@@ -151,9 +231,10 @@ function LoginForm() {
                     type={showPw ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="Min. 6 karakter"
                     className="w-full pl-10 pr-12 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-dim)] focus:outline-none focus:border-[var(--accent)]/60 focus:bg-[var(--bg-primary)] transition-all"
                     required
+                    minLength={6}
                   />
                   <button
                     type="button"
@@ -182,26 +263,26 @@ function LoginForm() {
                 {loading ? (
                   <>
                     <Sparkles size={15} className="animate-pulse" />
-                    Signing in...
+                    Creating account...
                   </>
                 ) : (
                   <>
                     <Sparkles size={15} />
-                    Sign In
+                    Create Free Account
                     <ArrowRight size={15} />
                   </>
                 )}
               </button>
             </form>
 
-            {/* Register link */}
+            {/* Login link */}
             <p className="text-center text-sm text-[var(--text-muted)] mt-6">
-              Don&apos;t have an account?{" "}
+              Already have an account?{" "}
               <Link
-                href="/register"
+                href="/login"
                 className="font-semibold text-[var(--accent)] hover:underline underline-offset-2 transition-colors"
               >
-                Create one free
+                Sign in
               </Link>
             </p>
           </div>
@@ -215,13 +296,5 @@ function LoginForm() {
         </p>
       </div>
     </main>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
   );
 }

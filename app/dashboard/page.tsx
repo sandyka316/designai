@@ -27,6 +27,8 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SpotlightCard from "@/components/SpotlightCard";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 // ─── TYPES (sesuai DashboardResponse dari backend) ─────────────────────────
 interface StatItem {
@@ -82,12 +84,26 @@ export default function DashboardPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
 
+  // ── Auth ─────────────────────────────────────────────────────────────────
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const token = (session as any)?.accessToken as string | undefined;
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login?redirect=/dashboard");
+    }
+  }, [status, router]);
+
   // ── Fetch dashboard dari backend ────────────────────────────────────────
   const fetchDashboard = async () => {
+    if (!token) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/dashboard");
+      const res = await fetch("http://127.0.0.1:8000/api/dashboard", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || `HTTP ${res.status}`);
@@ -102,17 +118,18 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    if (!token) return;
     fetchDashboard();
-    // Fetch daily limits in parallel
-    fetch("http://127.0.0.1:8000/api/limits/status/generate")
+    const headers = { Authorization: `Bearer ${token}` };
+    fetch("http://127.0.0.1:8000/api/limits/status/generate", { headers })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setGenLimit(d))
       .catch(() => {});
-    fetch("http://127.0.0.1:8000/api/limits/status/recommendation")
+    fetch("http://127.0.0.1:8000/api/limits/status/recommendation", { headers })
       .then((r) => r.ok ? r.json() : null)
       .then((d) => d && setRecLimit(d))
       .catch(() => {});
-  }, []);
+  }, [token]);
 
   // ── Debounced search (300ms) ──────────────────────────────────────────────
   useEffect(() => {
@@ -130,7 +147,8 @@ export default function DashboardPage() {
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(
-          `http://127.0.0.1:8000/api/search?q=${encodeURIComponent(trimmed)}`
+          `http://127.0.0.1:8000/api/search?q=${encodeURIComponent(trimmed)}`,
+          token ? { headers: { Authorization: `Bearer ${token}` } } : {}
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
@@ -152,7 +170,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(
         `http://127.0.0.1:8000/api/dashboard/generation/${id}`,
-        { method: "DELETE" }
+        { method: "DELETE", headers: token ? { Authorization: `Bearer ${token}` } : {} }
       );
       if (res.ok) {
         // Hapus dari state lokal tanpa refetch

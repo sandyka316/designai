@@ -20,10 +20,10 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 import GuestLimitModal from "@/components/GuestLimitModal";
-import { hasGuestLimitReached, incrementGuestCount } from "@/lib/guestLimit";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { useSession } from "next-auth/react";
 
 const MODELS = [
   { id: "hd", label: "HD", locked: false },
@@ -588,6 +588,8 @@ function FloatingStarsGenerate() {
 }
 
 function ImageGeneratorPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [selectedModel, setSelectedModel] = useState("hd");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -595,8 +597,8 @@ function ImageGeneratorPage() {
   const [showUploadMenu, setShowUploadMenu] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [openTip, setOpenTip] = useState<number | null>(null);
-  const [showLimitModal, setShowLimitModal] = useState(false);
   const [genLimit, setGenLimit] = useState<LimitStatus | null>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const searchParams = useSearchParams();
 
   const [prompt, setPrompt] = useState(searchParams.get("q") ?? "");
@@ -605,10 +607,22 @@ function ImageGeneratorPage() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const uploadMenuRef = useRef<HTMLDivElement>(null);
 
+  // ── Auth guard — redirect ke login jika belum login ────────────────────
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login?redirect=/generate");
+    }
+  }, [status, router]);
+
+  const token = (session as any)?.accessToken as string | undefined;
+
   // ── Fetch daily limit status on mount ──────────────────────────────────
   const fetchGenLimit = async () => {
+    if (!token) return;
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/limits/status/generate");
+      const res = await fetch("http://127.0.0.1:8000/api/limits/status/generate", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       if (res.ok) setGenLimit(await res.json());
     } catch {
       // silent fail — limit badge simply won't show
@@ -616,8 +630,8 @@ function ImageGeneratorPage() {
   };
 
   useEffect(() => {
-    fetchGenLimit();
-  }, []);
+    if (token) fetchGenLimit();
+  }, [token]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -665,17 +679,16 @@ function ImageGeneratorPage() {
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
-
-    // Guest limit check
-    if (hasGuestLimitReached()) {
-      setShowLimitModal(true);
+    if (!token) {
+      router.replace("/login?redirect=/generate");
       return;
     }
 
-    // Daily limit check (logged-in users)
+    // Daily limit check
     try {
       const limitRes = await fetch("http://127.0.0.1:8000/api/limits/check/generate", {
         method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (limitRes.status === 429) {
         const limitErr = await limitRes.json();
@@ -704,8 +717,8 @@ function ImageGeneratorPage() {
 
       const res = await fetch("http://localhost:8000/api/generate", {
         method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
-        // Jangan set Content-Type — browser otomatis set multipart/form-data
       });
 
       if (!res.ok) {
@@ -716,7 +729,6 @@ function ImageGeneratorPage() {
 
       const data = await res.json();
       setGeneratedImage(data.image_url ?? null);
-      incrementGuestCount();
       // Refresh limit status after successful generation
       fetchGenLimit();
     } catch (e) {
