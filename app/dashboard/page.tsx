@@ -393,6 +393,58 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
+
+          {/* ─── Daily Usage ────────────────────────────────────── */}
+          {(genLimit || recLimit) && (
+            <div className="mt-4 pt-4 border-t border-[var(--accent)]/15 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {genLimit && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] text-[var(--text-muted)]">🖼 Image Generation today</span>
+                    <span className={`text-[10px] font-bold tabular-nums ${
+                      genLimit.remaining === 0 ? "text-red-400" : "text-[var(--text-primary)]"
+                    }`}>
+                      {genLimit.used_today} / {genLimit.daily_limit}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${
+                        genLimit.remaining === 0 ? "bg-red-400" : "bg-[var(--accent)]"
+                      }`}
+                      style={{ width: `${Math.min(100, Math.round((genLimit.used_today / genLimit.daily_limit) * 100))}%` }}
+                    />
+                  </div>
+                  {genLimit.remaining === 0 && (
+                    <p className="text-[10px] text-red-400 mt-1">Limit reached — resets midnight WIB</p>
+                  )}
+                </div>
+              )}
+              {recLimit && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] text-[var(--text-muted)]">🤖 AI Recommendation today</span>
+                    <span className={`text-[10px] font-bold tabular-nums ${
+                      recLimit.remaining === 0 ? "text-red-400" : "text-[var(--text-primary)]"
+                    }`}>
+                      {recLimit.used_today} / {recLimit.daily_limit}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${
+                        recLimit.remaining === 0 ? "bg-red-400" : "bg-purple-500"
+                      }`}
+                      style={{ width: `${Math.min(100, Math.round((recLimit.used_today / recLimit.daily_limit) * 100))}%` }}
+                    />
+                  </div>
+                  {recLimit.remaining === 0 && (
+                    <p className="text-[10px] text-red-400 mt-1">Limit reached — resets midnight WIB</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ─── MAIN GRID ──────────────────────────────────────── */}

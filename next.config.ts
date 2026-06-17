@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },
+
+  // Mengizinkan Cloudflare Tunnel untuk mengakses HMR & assets di Next.js 16
+  allowedDevOrigins: [
+    "app.unesa.dev",
+    "app.claude-code.bond",
+  ],
 };
 
 export default nextConfig;

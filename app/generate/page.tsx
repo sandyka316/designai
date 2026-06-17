@@ -787,6 +787,22 @@ function ImageGeneratorPage() {
               <h1 className="text-2xl md:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
                 AI Image Generator
               </h1>
+              {genLimit && (
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                    genLimit.remaining === 0
+                      ? "bg-red-500/10 border-red-500/25 text-red-400"
+                      : "bg-[var(--accent)]/10 border-[var(--accent)]/20 text-[var(--accent)]"
+                  }`}>
+                    🖼 {genLimit.used_today}/{genLimit.daily_limit} used today
+                  </div>
+                  {genLimit.remaining === 0 ? (
+                    <span className="text-[10px] text-red-400 font-medium">Limit reached — resets midnight WIB</span>
+                  ) : (
+                    <span className="text-[10px] text-[var(--text-muted)]">{genLimit.remaining} remaining</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <div className="hidden md:block w-px h-12 bg-[var(--border)] ml-12" />
