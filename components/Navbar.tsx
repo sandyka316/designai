@@ -134,18 +134,18 @@ export default function Navbar({
           {!isLoading && !session && (
             <>
               {/* Sign in & Get Started — desktop only */}
-              <button
-                onClick={() => signIn("google")}
+              <a
+                href="/login"
                 className="hidden md:block text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors duration-200 font-medium"
               >
                 Sign in
-              </button>
-              <button
-                onClick={() => signIn("google")}
+              </a>
+              <a
+                href="/login"
                 className="hidden md:block btn-shimmer text-sm font-semibold text-white px-4 py-2 rounded-lg"
               >
                 Get Started
-              </button>
+              </a>
 
               {/* Hamburger — selalu muncul saat belum login */}
               <div className="relative" ref={menuRef}>
@@ -216,18 +216,18 @@ export default function Navbar({
 
                     {/* Mobile: tombol auth */}
                     <div className="md:hidden border-t border-[var(--border)] px-4 py-4 flex flex-col gap-3">
-                      <button
-                        onClick={() => signIn("google")}
-                        className="text-sm text-[var(--text-muted)] text-left font-medium hover:text-[var(--text-primary)] transition-colors py-1"
+                      <a
+                        href="/login"
+                        className="text-sm text-[var(--text-muted)] text-left font-medium hover:text-[var(--text-primary)] transition-colors py-1 block"
                       >
-                        Sign in with Google
-                      </button>
-                      <button
-                        onClick={() => signIn("google")}
-                        className="btn-shimmer text-sm font-semibold text-white px-4 py-2.5 rounded-lg text-center"
+                        Sign in
+                      </a>
+                      <a
+                        href="/login"
+                        className="btn-shimmer text-sm font-semibold text-white px-4 py-2.5 rounded-lg text-center block"
                       >
                         Get Started
-                      </button>
+                      </a>
                     </div>
                   </div>
                 )}
